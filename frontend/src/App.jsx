@@ -20,12 +20,14 @@ function App() {
     completions,
     dailyGoal,
     reminderTime,
+    categories,
     toggleHabit,
     addHabit,
     updateHabit,
     deleteHabit,
     updateDailyGoal,
     updateReminderTime,
+    addCategory,
   } = useHabits();
 
   const handleAddHabit = () => {
@@ -47,14 +49,26 @@ function App() {
     }
   };
 
-  const handleSaveHabit = (habitData) => {
-    if (editingHabit) {
-      updateHabit(editingHabit.id, habitData);
-    } else {
-      addHabit(habitData);
+  const handleSaveHabit = async (habitData) => {
+    try {
+      if (editingHabit) {
+        await updateHabit(editingHabit.id, habitData);
+      } else {
+        await addHabit(habitData);
+      }
+      setIsModalOpen(false);
+      setEditingHabit(null);
+    } catch {
+      // Errors logged in useHabits; keep modal open so user can retry
     }
-    setIsModalOpen(false);
-    setEditingHabit(null);
+  };
+
+  const handleAddCategory = async (categoryName) => {
+    try {
+      await addCategory(categoryName);
+    } catch {
+      // Errors logged in useHabits
+    }
   };
 
   const handleCloseModal = () => {
@@ -89,6 +103,7 @@ function App() {
             completions={completions}
             dailyGoal={dailyGoal}
             reminderTime={reminderTime}
+            categories={categories}
             onToggleHabit={toggleHabit}
             onEditHabit={handleEditHabit}
             onDeleteHabit={handleDeleteHabit}
@@ -146,11 +161,14 @@ function App() {
       <HabitModal
         isOpen={isModalOpen}
         habit={editingHabit}
+        categories={categories}
         onSave={handleSaveHabit}
         onClose={handleCloseModal}
+        onAddCategory={handleAddCategory}
       />
     </div>
   );
 }
 
 export default App;
+

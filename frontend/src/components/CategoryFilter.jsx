@@ -1,15 +1,14 @@
 import React from 'react';
-import { CATEGORIES } from '../constants';
 
 /**
  * Category filter component for filtering habits by category
  */
-export function CategoryFilter({ activeCategory, onCategoryChange }) {
-  const categories = ['All', ...CATEGORIES];
+export function CategoryFilter({ activeCategory, onCategoryChange, categories = [] }) {
+  const allCategories = ['All', ...categories];
 
   return (
     <div className="category-filter">
-      {categories.map((cat) => (
+      {allCategories.map((cat) => (
         <button
           key={cat}
           className={`category-btn${activeCategory === cat ? ' active' : ''}`}

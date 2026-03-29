@@ -8,7 +8,7 @@ export function Sidebar({ habits, completions, activeView, onViewChange, onAddHa
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="logo-mark">◆ Streaks</div>
+        <div className="logo-mark">◆ Streakz</div>
         <div className="logo-sub">Habit Analytics</div>
       </div>
       

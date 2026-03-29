@@ -30,8 +30,6 @@ export const COLORS = [
   "#a3e635",
 ];
 
-export const CATEGORIES = ["DSA", "Aptitude", "Core", "Projects"];
-
 export const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export const MONTHS = [

@@ -23,7 +23,6 @@ export function AnalyticsView({ habits, completions }) {
     }
 
     return () => {
-      // Cleanup charts on unmount
       Object.values(chartsRef.current).forEach(chart => {
         if (chart) chart.destroy();
       });

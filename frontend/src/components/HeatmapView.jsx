@@ -50,7 +50,7 @@ export function HeatmapView({ habits, completions }) {
         col.push(
           <div
             key={d}
-            className={`heatmap-sq${isFuture ? '' : ''}${!isFuture && level ? ` l${level}` : ''}`}
+            className={`heatmap-sq${!isFuture && level ? ` l${level}` : ''}`}
             style={isToday ? { outline: '1px solid #7c6af7' } : {}}
             title={title}
             onMouseMove={(e) => showTip(e, title)}

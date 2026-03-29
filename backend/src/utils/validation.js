@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { CATEGORIES } from '../models/Habit.js';
 import { DATE_REGEX } from '../models/Completion.js';
 import { AppError } from '../middleware/AppError.js';
 
@@ -34,8 +33,11 @@ export function validateHabitBody(body, partial = false) {
     if (name === undefined || typeof name !== 'string' || !name.trim()) {
       throw new AppError('name is required', 400);
     }
-    if (!CATEGORIES.includes(category)) {
-      throw new AppError(`category must be one of: ${CATEGORIES.join(', ')}`, 400);
+    if (category === undefined || typeof category !== 'string' || !category.trim()) {
+      throw new AppError('category is required', 400);
+    }
+    if (category.trim().length > 50) {
+      throw new AppError('Category name cannot exceed 50 characters', 400);
     }
   }
 
@@ -43,8 +45,13 @@ export function validateHabitBody(body, partial = false) {
     throw new AppError('name must be a non-empty string', 400);
   }
 
-  if (category !== undefined && !CATEGORIES.includes(category)) {
-    throw new AppError(`category must be one of: ${CATEGORIES.join(', ')}`, 400);
+  if (category !== undefined) {
+    if (typeof category !== 'string' || !category.trim()) {
+      throw new AppError('category must be a non-empty string', 400);
+    }
+    if (category.trim().length > 50) {
+      throw new AppError('Category name cannot exceed 50 characters', 400);
+    }
   }
 
   if (emoji !== undefined && typeof emoji !== 'string') {

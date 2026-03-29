@@ -1,7 +1,5 @@
 import mongoose from 'mongoose';
 
-const CATEGORIES = ['DSA', 'Aptitude', 'Core', 'Projects'];
-
 const habitSchema = new mongoose.Schema(
   {
     name: {
@@ -13,8 +11,9 @@ const habitSchema = new mongoose.Schema(
     color: { type: String, default: '#22c97a' },
     category: {
       type: String,
-      enum: CATEGORIES,
-      required: true,
+      required: [true, 'Category is required'],
+      trim: true,
+      maxlength: [50, 'Category name cannot exceed 50 characters'],
     },
   },
   { timestamps: true }
@@ -31,4 +30,3 @@ habitSchema.set('toJSON', {
 });
 
 export const Habit = mongoose.model('Habit', habitSchema);
-export { CATEGORIES };

@@ -11,13 +11,14 @@ export async function getSettings(_req, res) {
       key: DEFAULT_KEY,
       dailyGoal: 3,
       reminderTime: null,
+      categories: ['study', 'fitness', 'work'],
     });
   }
   res.json(doc.toJSON());
 }
 
 export async function updateSettings(req, res) {
-  const { dailyGoal, reminderTime } = req.body || {};
+  const { dailyGoal, reminderTime, categories } = req.body || {};
   const updates = {};
 
   if (dailyGoal !== undefined) {
@@ -28,6 +29,12 @@ export async function updateSettings(req, res) {
       throw new AppError('reminderTime must be a string or null', 400);
     }
     updates.reminderTime = reminderTime || null;
+  }
+  if (categories !== undefined) {
+    if (!Array.isArray(categories) || !categories.every(cat => typeof cat === 'string')) {
+      throw new AppError('categories must be an array of strings', 400);
+    }
+    updates.categories = categories;
   }
 
   if (Object.keys(updates).length === 0) {

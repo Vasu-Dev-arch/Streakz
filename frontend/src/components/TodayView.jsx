@@ -14,6 +14,7 @@ export function TodayView({
   completions, 
   dailyGoal, 
   reminderTime,
+  categories,
   onToggleHabit, 
   onEditHabit, 
   onDeleteHabit,
@@ -58,6 +59,7 @@ export function TodayView({
       <CategoryFilter 
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
+        categories={categories}
       />
       
       <div className="habits-grid">

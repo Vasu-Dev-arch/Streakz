@@ -18,6 +18,10 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  categories: {
+    type: [String],
+    default: ['study', 'fitness', 'work'],
+  },
 });
 
 settingsSchema.set('toJSON', {
