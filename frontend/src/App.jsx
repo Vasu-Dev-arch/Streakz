@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { TodayView } from './components/TodayView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { HeatmapView } from './components/HeatmapView';
+import { SettingsView } from './components/SettingsView';
 import { HabitModal } from './components/HabitModal';
 import { useHabits } from './hooks/useHabits';
 import { DAYS, MONTHS } from './constants';
@@ -84,6 +85,8 @@ function App() {
         return 'Analytics';
       case 'calendar':
         return 'Heatmap';
+      case 'settings':
+        return 'Settings';
       default:
         return 'Today';
     }
@@ -125,6 +128,8 @@ function App() {
             completions={completions}
           />
         );
+      case 'settings':
+        return <SettingsView />;
       default:
         return null;
     }
@@ -171,4 +176,3 @@ function App() {
 }
 
 export default App;
-

@@ -1,20 +1,29 @@
+/**
+ * Main Application Styles
+ * 
+ * Uses theme CSS variables for consistent theming.
+ * Legacy variable names are mapped to new theme variables in theme.css.
+ */
+
 :root {
-  --bg: #0d0d0f;
-  --bg2: #131316;
-  --bg3: #1a1a1e;
-  --bg4: #222228;
-  --border: rgba(255, 255, 255, 0.07);
-  --border2: rgba(255, 255, 255, 0.12);
-  --text: #e8e8ec;
-  --text2: #8a8a96;
-  --text3: #5a5a68;
-  --accent: #7c6af7;
-  --accent2: #a599ff;
-  --green: #22c97a;
-  --amber: #f5a623;
-  --red: #f05252;
-  --teal: #20d6c7;
-  --pink: #e060b0;
+  /* Legacy variable mappings - these map to theme variables */
+  --bg: var(--theme-background);
+  --bg2: var(--theme-backgroundSecondary);
+  --bg3: var(--theme-backgroundTertiary);
+  --bg4: var(--theme-backgroundQuaternary);
+  --border: var(--theme-border);
+  --border2: var(--theme-borderSecondary);
+  --text: var(--theme-text);
+  --text2: var(--theme-textSecondary);
+  --text3: var(--theme-textTertiary);
+  --accent: var(--theme-accent);
+  --accent2: var(--theme-accentSecondary);
+  --green: var(--theme-success);
+  --amber: var(--theme-warning);
+  --red: var(--theme-error);
+  --teal: var(--theme-info);
+  
+  /* Design tokens */
   --radius: 12px;
   --radius-sm: 8px;
   --mono: "DM Mono", monospace;
@@ -460,6 +469,26 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
+}
+
+/* Hide scrollbar in chart-card while keeping scroll functionality */
+.chart-card::-webkit-scrollbar {
+  display: none;
+}
+
+.chart-card {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+/* Hide scrollbar in heatmap scroll containers */
+.heatmap-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.heatmap-scroll {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
 }
 
 .chart-title {
@@ -921,6 +950,22 @@ body {
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 24px;
+}
+
+/* Settings page */
+.settings-page {
+  max-width: 800px;
+}
+
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text);
 }
 
 @media (max-width: 900px) {

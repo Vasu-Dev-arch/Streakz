@@ -87,7 +87,7 @@ export function HeatmapView({ habits, completions }) {
     ));
 
     return (
-      <div style={{ overflowX: 'auto' }}>
+      <div className="heatmap-scroll" style={{ overflowX: 'auto' }}>
         <div className="heatmap-months" style={{ paddingLeft: '22px', gap: 0 }}>
           {monthLabels}
         </div>
@@ -136,7 +136,7 @@ export function HeatmapView({ habits, completions }) {
         <div className="chart-sub">
           Past 26 weeks — darker = more habits completed that day
         </div>
-        <div style={{ marginTop: '16px', overflowX: 'auto' }}>
+        <div className="heatmap-scroll" style={{ marginTop: '16px', overflowX: 'auto' }}>
           {renderOverallHeatmap()}
         </div>
       </div>
