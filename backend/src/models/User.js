@@ -15,24 +15,31 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    // Optional — Google users have no password
     password: {
       type: String,
-      required: true,
       minlength: 6,
+      default: null,
+    },
+    // Optional — email/password users have no googleId
+    googleId: {
+      type: String,
+      default: null,
     },
   },
   { timestamps: true }
 );
 
-// Hash password before save
+// Hash password before save (only when it is set and modified)
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.password || !this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
 // Compare plain password against hash
 userSchema.methods.comparePassword = function (plain) {
+  if (!this.password) return Promise.resolve(false);
   return bcrypt.compare(plain, this.password);
 };
 
@@ -42,7 +49,8 @@ userSchema.set('toJSON', {
   transform: (_doc, ret) => {
     ret.id = ret._id.toString();
     delete ret._id;
-    delete ret.password; // never expose hash
+    delete ret.password;
+    delete ret.googleId; // internal field — not needed on client
     return ret;
   },
 });

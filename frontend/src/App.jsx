@@ -6,16 +6,16 @@ import { HeatmapView } from './components/HeatmapView';
 import { SettingsView } from './components/SettingsView';
 import { HabitModal } from './components/HabitModal';
 import { AuthPage } from './components/AuthPage';
+import { AuthCallbackPage } from './components/AuthCallbackPage';
 import { useAuth } from './hooks/useAuth';
 import { useHabits } from './hooks/useHabits';
 import { DAYS, MONTHS } from './constants';
 
-// ── Profile avatar + dropdown ────────────────────────────────────────────────
+// ── Profile avatar + dropdown ─────────────────────────────────────────────────
 function ProfileMenu({ user, onSettings, onLogout }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     function handleClick(e) {
@@ -25,14 +25,12 @@ function ProfileMenu({ user, onSettings, onLogout }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  // Derive initials from name, fall back to '?'
   const initials = user?.name
     ? user.name.trim().split(/\s+/).map((w) => w[0].toUpperCase()).slice(0, 2).join('')
     : '?';
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      {/* Avatar button */}
       <button
         onClick={() => setOpen((v) => !v)}
         title={user?.name ?? 'Profile'}
@@ -57,7 +55,6 @@ function ProfileMenu({ user, onSettings, onLogout }) {
         {initials}
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div style={{
           position: 'absolute',
@@ -71,7 +68,6 @@ function ProfileMenu({ user, onSettings, onLogout }) {
           zIndex: 50,
           boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
         }}>
-          {/* User info header */}
           {user?.name && (
             <div style={{
               padding: '8px 10px 10px',
@@ -89,11 +85,7 @@ function ProfileMenu({ user, onSettings, onLogout }) {
             </div>
           )}
 
-          {/* Settings */}
-          <button
-            onClick={() => { setOpen(false); onSettings(); }}
-            style={menuItemStyle}
-          >
+          <button onClick={() => { setOpen(false); onSettings(); }} style={menuItemStyle}>
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
               <circle cx="12" cy="12" r="3"/>
               <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
@@ -101,14 +93,9 @@ function ProfileMenu({ user, onSettings, onLogout }) {
             Settings
           </button>
 
-          {/* Divider */}
           <div style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }} />
 
-          {/* Logout */}
-          <button
-            onClick={() => { setOpen(false); onLogout(); }}
-            style={{ ...menuItemStyle, color: 'var(--red)' }}
-          >
+          <button onClick={() => { setOpen(false); onLogout(); }} style={{ ...menuItemStyle, color: 'var(--red)' }}>
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
             </svg>
@@ -137,15 +124,29 @@ const menuItemStyle = {
   transition: 'background 0.12s',
 };
 
-// ── Root component ────────────────────────────────────────────────────────────
+// ── Root: route between callback, auth, and main app ─────────────────────────
 function App() {
-  const { token, user, error, loading, login, signup, logout } = useAuth();
+  const { token, user, error, loading, login, signup, loginWithGoogle, handleGoogleCallback, logout } = useAuth();
+
+  // Simple path-based routing — no react-router needed
+  const isCallbackPage = window.location.pathname === '/auth/callback';
+
+  if (isCallbackPage) {
+    return (
+      <AuthCallbackPage
+        handleGoogleCallback={handleGoogleCallback}
+        onSuccess={() => window.location.replace('/')}
+        onFailure={() => window.location.replace('/auth/callback?error=true')}
+      />
+    );
+  }
 
   if (!token) {
     return (
       <AuthPage
         onLogin={login}
         onSignup={signup}
+        onGoogleLogin={loginWithGoogle}
         error={error}
         loading={loading}
       />
@@ -176,23 +177,15 @@ function AuthenticatedApp({ token, user, onLogout }) {
     addCategory,
   } = useHabits(token);
 
-  const handleAddHabit = () => {
-    setEditingHabit(null);
-    setIsModalOpen(true);
-  };
+  const handleAddHabit = () => { setEditingHabit(null); setIsModalOpen(true); };
 
   const handleEditHabit = (id) => {
     const habit = habits.find((h) => h.id === id);
-    if (habit) {
-      setEditingHabit(habit);
-      setIsModalOpen(true);
-    }
+    if (habit) { setEditingHabit(habit); setIsModalOpen(true); }
   };
 
   const handleDeleteHabit = (id) => {
-    if (window.confirm('Delete this habit? All completion data will be lost.')) {
-      deleteHabit(id);
-    }
+    if (window.confirm('Delete this habit? All completion data will be lost.')) deleteHabit(id);
   };
 
   const handleSaveHabit = async (habitData) => {
@@ -204,22 +197,11 @@ function AuthenticatedApp({ token, user, onLogout }) {
       }
       setIsModalOpen(false);
       setEditingHabit(null);
-    } catch {
-      // Errors logged in useHabits; keep modal open so user can retry
-    }
+    } catch { /* logged in useHabits */ }
   };
 
-  const handleAddCategory = async (categoryName) => {
-    try {
-      await addCategory(categoryName);
-    } catch {
-      // Errors logged in useHabits
-    }
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingHabit(null);
+  const handleAddCategory = async (name) => {
+    try { await addCategory(name); } catch { /* logged in useHabits */ }
   };
 
   const getViewTitle = () => {
@@ -254,14 +236,10 @@ function AuthenticatedApp({ token, user, onLogout }) {
             onReminderChange={updateReminderTime}
           />
         );
-      case 'analytics':
-        return <AnalyticsView habits={habits} completions={completions} />;
-      case 'calendar':
-        return <HeatmapView habits={habits} completions={completions} />;
-      case 'settings':
-        return <SettingsView />;
-      default:
-        return null;
+      case 'analytics': return <AnalyticsView habits={habits} completions={completions} />;
+      case 'calendar':  return <HeatmapView habits={habits} completions={completions} />;
+      case 'settings':  return <SettingsView />;
+      default:          return null;
     }
   };
 
@@ -282,9 +260,7 @@ function AuthenticatedApp({ token, user, onLogout }) {
             <div className="main-date">{getFormattedDate()}</div>
           </div>
           <div className="header-actions">
-            <button className="btn-sm" onClick={handleAddHabit}>
-              + New Habit
-            </button>
+            <button className="btn-sm" onClick={handleAddHabit}>+ New Habit</button>
             <ProfileMenu
               user={user}
               onSettings={() => setActiveView('settings')}
@@ -293,9 +269,7 @@ function AuthenticatedApp({ token, user, onLogout }) {
           </div>
         </div>
 
-        <div className="content-area">
-          {renderView()}
-        </div>
+        <div className="content-area">{renderView()}</div>
       </main>
 
       <HabitModal
@@ -303,7 +277,7 @@ function AuthenticatedApp({ token, user, onLogout }) {
         habit={editingHabit}
         categories={categories}
         onSave={handleSaveHabit}
-        onClose={handleCloseModal}
+        onClose={() => { setIsModalOpen(false); setEditingHabit(null); }}
         onAddCategory={handleAddCategory}
       />
     </div>
