@@ -3,8 +3,12 @@ import { Completion } from '../models/Completion.js';
 import { AppError } from '../middleware/AppError.js';
 import { assertObjectId, validateHabitBody } from '../utils/validation.js';
 
-export async function listHabits(_req, res) {
-  const habits = await Habit.find().sort({ createdAt: 1 }).lean();
+export async function listHabits(req, res) {
+  console.log('Auth Debug - req.user:', req.user);
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Not authorized, user data missing' });
+  }
+  const habits = await Habit.find({ userId: req.user.id }).sort({ createdAt: 1 }).lean();
   const mapped = habits.map((h) => ({
     id: h._id.toString(),
     name: h.name,
@@ -18,9 +22,14 @@ export async function listHabits(_req, res) {
 }
 
 export async function createHabit(req, res) {
+  console.log('Auth Debug - req.user:', req.user);
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Not authorized, user data missing' });
+  }
   validateHabitBody(req.body, false);
   const { name, emoji, color, category } = req.body;
   const habit = await Habit.create({
+    userId: req.user.id,
     name: name.trim(),
     emoji: emoji ?? '',
     color: color ?? '#22c97a',
@@ -30,6 +39,10 @@ export async function createHabit(req, res) {
 }
 
 export async function updateHabit(req, res) {
+  console.log('Auth Debug - req.user:', req.user);
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Not authorized, user data missing' });
+  }
   assertObjectId(req.params.id, 'habit id');
   validateHabitBody(req.body, true);
 
@@ -39,10 +52,12 @@ export async function updateHabit(req, res) {
   if (req.body.color !== undefined) updates.color = req.body.color;
   if (req.body.category !== undefined) updates.category = req.body.category;
 
-  const habit = await Habit.findByIdAndUpdate(req.params.id, updates, {
-    new: true,
-    runValidators: true,
-  });
+  // userId filter ensures users can only edit their own habits
+  const habit = await Habit.findOneAndUpdate(
+    { _id: req.params.id, userId: req.user.id },
+    updates,
+    { new: true, runValidators: true }
+  );
   if (!habit) {
     throw new AppError('Habit not found', 404);
   }
@@ -50,11 +65,19 @@ export async function updateHabit(req, res) {
 }
 
 export async function deleteHabit(req, res) {
+  console.log('Auth Debug - req.user:', req.user);
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Not authorized, user data missing' });
+  }
   assertObjectId(req.params.id, 'habit id');
-  const habit = await Habit.findByIdAndDelete(req.params.id);
+  const habit = await Habit.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
   if (!habit) {
     throw new AppError('Habit not found', 404);
   }
-  await Completion.updateMany({}, { $pull: { habitIds: habit._id } });
+  // Remove from this user's completion docs only
+  await Completion.updateMany(
+    { userId: req.user.id },
+    { $pull: { habitIds: habit._id } }
+  );
   res.status(204).send();
 }

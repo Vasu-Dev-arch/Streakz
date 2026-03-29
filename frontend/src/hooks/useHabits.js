@@ -1,18 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getToken } from './useAuth';
 import { todayKey } from '../utils/dateUtils';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
 
+/**
+ * Central fetch helper.
+ * Reads the token fresh from localStorage on every call so it is always
+ * current, even if the token was written after the hook first mounted.
+ * No prop-threading required — importers just call apiFetch().
+ */
 async function apiFetch(path, options = {}) {
+  const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
   });
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`${options.method ?? 'GET'} ${path} failed: ${res.status} ${text}`);
   }
-  // 204 No Content — nothing to parse
   if (res.status === 204) return null;
   return res.json();
 }
@@ -30,17 +42,30 @@ function buildCompletionsMap(docs) {
 }
 
 /**
- * Custom hook — all data comes from the backend. No localStorage.
+ * Custom hook — all data comes from the backend, scoped to the authenticated user.
+ * @param {string|null} token  JWT from useAuth — used only as a trigger to
+ *                             reload data when auth state changes; the actual
+ *                             token value is read inside apiFetch via getToken().
  */
-export function useHabits() {
+export function useHabits(token) {
   const [habits, setHabits] = useState([]);
   const [completions, setCompletions] = useState({});
   const [dailyGoal, setDailyGoal] = useState(3);
   const [reminderTime, setReminderTime] = useState(null);
   const [categories, setCategories] = useState(['study', 'fitness', 'work']);
 
-  // ── Initial load ────────────────────────────────────────────────────────────
+  // ── Initial load — re-runs whenever auth state changes ──────────────────────
   useEffect(() => {
+    if (!token) {
+      // Clear all state on logout so no stale data leaks between accounts
+      setHabits([]);
+      setCompletions({});
+      setDailyGoal(3);
+      setReminderTime(null);
+      setCategories(['study', 'fitness', 'work']);
+      return;
+    }
+
     let cancelled = false;
 
     async function loadAll() {
@@ -57,7 +82,11 @@ export function useHabits() {
         setCompletions(buildCompletionsMap(Array.isArray(completionsData) ? completionsData : []));
         setDailyGoal(settingsData?.dailyGoal ?? 3);
         setReminderTime(settingsData?.reminderTime ?? null);
-        setCategories(Array.isArray(settingsData?.categories) ? settingsData.categories : ['study', 'fitness', 'work']);
+        setCategories(
+          Array.isArray(settingsData?.categories)
+            ? settingsData.categories
+            : ['study', 'fitness', 'work']
+        );
       } catch (err) {
         console.error('Failed to load initial data:', err);
       }
@@ -65,7 +94,7 @@ export function useHabits() {
 
     loadAll();
     return () => { cancelled = true; };
-  }, []);
+  }, [token]);
 
   // ── Habits ──────────────────────────────────────────────────────────────────
   const addHabit = useCallback(async (habit) => {
@@ -93,8 +122,6 @@ export function useHabits() {
   const deleteHabit = useCallback(async (id) => {
     await apiFetch(`/api/habits/${id}`, { method: 'DELETE' });
     setHabits((prev) => prev.filter((h) => h.id !== id));
-    // Backend already strips the id from all completion docs via $pull;
-    // mirror that in local state so UI is consistent without a full refetch.
     setCompletions((prev) => {
       const next = {};
       for (const [date, ids] of Object.entries(prev)) {
@@ -124,7 +151,6 @@ export function useHabits() {
         method: 'POST',
         body: JSON.stringify({ date: tk, habitId: id }),
       });
-      // Reconcile with server truth
       setCompletions((prev) => ({
         ...prev,
         [data.date]: new Set(data.habitIds),
@@ -145,7 +171,7 @@ export function useHabits() {
   // ── Settings ────────────────────────────────────────────────────────────────
   const updateDailyGoal = useCallback(async (goal) => {
     const validGoal = Math.max(1, Math.min(20, parseInt(goal) || 3));
-    setDailyGoal(validGoal); // optimistic
+    setDailyGoal(validGoal);
     try {
       const data = await apiFetch('/api/settings', {
         method: 'PUT',
@@ -160,7 +186,7 @@ export function useHabits() {
 
   const updateReminderTime = useCallback(async (time) => {
     const value = time || null;
-    setReminderTime(value); // optimistic
+    setReminderTime(value);
     try {
       const data = await apiFetch('/api/settings', {
         method: 'PUT',
@@ -181,7 +207,7 @@ export function useHabits() {
       throw new Error('Category already exists');
     }
     const updatedCategories = [...categories, trimmedName];
-    setCategories(updatedCategories); // optimistic
+    setCategories(updatedCategories);
     try {
       const data = await apiFetch('/api/settings', {
         method: 'PUT',

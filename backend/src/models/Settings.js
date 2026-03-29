@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 
 const settingsSchema = new mongoose.Schema({
-  key: {
-    type: String,
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
-    unique: true,
-    default: 'default',
+    unique: true, // one settings doc per user
   },
   dailyGoal: {
     type: Number,
@@ -18,10 +18,6 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
-  categories: {
-    type: [String],
-    default: ['study', 'fitness', 'work'],
-  },
 });
 
 settingsSchema.set('toJSON', {
@@ -30,6 +26,7 @@ settingsSchema.set('toJSON', {
   transform: (_doc, ret) => {
     ret.id = ret._id.toString();
     delete ret._id;
+    delete ret.userId;
     return ret;
   },
 });

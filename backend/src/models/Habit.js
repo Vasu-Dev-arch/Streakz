@@ -2,6 +2,12 @@ import mongoose from 'mongoose';
 
 const habitSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
     name: {
       type: String,
       required: true,
@@ -25,6 +31,7 @@ habitSchema.set('toJSON', {
   transform: (_doc, ret) => {
     ret.id = ret._id.toString();
     delete ret._id;
+    delete ret.userId; // not needed on the client
     return ret;
   },
 });
