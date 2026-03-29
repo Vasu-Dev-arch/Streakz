@@ -9,8 +9,14 @@ import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
-const origin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
-app.use(cors());
+// const origin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://streakz-six.vercel.app"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
