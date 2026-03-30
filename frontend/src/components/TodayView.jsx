@@ -6,26 +6,24 @@ import { GoalCard } from './GoalCard';
 import { ReminderCard } from './ReminderCard';
 import { todayKey } from '../utils/dateUtils';
 
-/**
- * Today view component showing today's habits and statistics
- */
-export function TodayView({ 
-  habits, 
-  completions, 
-  dailyGoal, 
+export function TodayView({
+  habits,
+  completions,
+  dailyGoal,
   reminderTime,
   categories,
-  onToggleHabit, 
-  onEditHabit, 
+  onToggleHabit,
+  onEditHabit,
   onDeleteHabit,
   onGoalChange,
-  onReminderChange
+  onReminderChange,
+  onNavigateToAiCoach,
 }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const tk = todayKey();
 
-  const filteredHabits = activeCategory === 'All' 
-    ? habits 
+  const filteredHabits = activeCategory === 'All'
+    ? habits
     : habits.filter(h => h.category === activeCategory);
 
   const done = filteredHabits.filter((h) => completions[tk]?.has(h.id)).length;
@@ -33,41 +31,57 @@ export function TodayView({
   return (
     <div className="view active">
       <StatsRow habits={habits} completions={completions} />
-      
+
       <div className="goal-reminder-row">
-        <GoalCard 
+        <GoalCard
           habits={habits}
           completions={completions}
           dailyGoal={dailyGoal}
           onGoalChange={onGoalChange}
         />
-        <ReminderCard 
+        <ReminderCard
           habits={habits}
           completions={completions}
           reminderTime={reminderTime}
           onReminderChange={onReminderChange}
         />
       </div>
-      
+
       <div className="section-header">
         <span className="section-title">Habits</span>
         <span style={{ fontSize: '12px', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
           {done} / {filteredHabits.length} complete
         </span>
       </div>
-      
-      <CategoryFilter 
+
+      <CategoryFilter
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
         categories={categories}
       />
-      
+
       <div className="habits-grid">
         {filteredHabits.length === 0 ? (
           <div className="empty-state" style={{ gridColumn: '1/-1' }}>
             <div className="empty-icon">🌱</div>
-            <div className="empty-text">No habits yet</div>
-            <div className="empty-sub">Add your first habit to get started</div>
+            <div className="empty-text">
+              {habits.length === 0 ? 'No habits yet' : 'No habits in this category'}
+            </div>
+            <div className="empty-sub">
+              {habits.length === 0
+                ? 'Add your first habit to get started'
+                : 'Switch category or add a new habit'}
+            </div>
+            {/* AI Coach entry point — shown when there are no habits at all */}
+            {habits.length === 0 && onNavigateToAiCoach && (
+              <button
+                className="ai-coach-entry-btn"
+                onClick={onNavigateToAiCoach}
+              >
+                <span>✦</span>
+                Get an AI-generated habit plan
+              </button>
+            )}
           </div>
         ) : (
           filteredHabits.map((habit) => (

@@ -7,7 +7,6 @@ import { getStreak } from '../utils/dateUtils';
  */
 export function Sidebar({ habits, completions, activeView, onViewChange, onAddHabit, isOpen, onClose }) {
 
-  // On mobile, close the drawer after a nav item is tapped
   const handleNavClick = (view) => {
     onViewChange(view);
     if (onClose) onClose();
@@ -15,14 +14,7 @@ export function Sidebar({ habits, completions, activeView, onViewChange, onAddHa
 
   return (
     <aside className={`sidebar${isOpen ? ' sidebar--open' : ''}`}>
-      {/* Close button — only rendered/visible on mobile via CSS */}
-      <button
-        className="sidebar-close-btn"
-        onClick={onClose}
-        aria-label="Close menu"
-      >
-        ✕
-      </button>
+      <button className="sidebar-close-btn" onClick={onClose} aria-label="Close menu">✕</button>
 
       <div className="sidebar-logo">
         <div className="logo-mark">◆ Streakz</div>
@@ -31,10 +23,7 @@ export function Sidebar({ habits, completions, activeView, onViewChange, onAddHa
 
       <div className="sidebar-section-label">Navigate</div>
       <ul className="nav-list">
-        <li
-          className={`nav-item${activeView === 'today' ? ' active' : ''}`}
-          onClick={() => handleNavClick('today')}
-        >
+        <li className={`nav-item${activeView === 'today' ? ' active' : ''}`} onClick={() => handleNavClick('today')}>
           <span className="nav-icon">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -45,10 +34,8 @@ export function Sidebar({ habits, completions, activeView, onViewChange, onAddHa
           </span>
           Today
         </li>
-        <li
-          className={`nav-item${activeView === 'analytics' ? ' active' : ''}`}
-          onClick={() => handleNavClick('analytics')}
-        >
+
+        <li className={`nav-item${activeView === 'analytics' ? ' active' : ''}`} onClick={() => handleNavClick('analytics')}>
           <span className="nav-icon">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -56,10 +43,8 @@ export function Sidebar({ habits, completions, activeView, onViewChange, onAddHa
           </span>
           Analytics
         </li>
-        <li
-          className={`nav-item${activeView === 'calendar' ? ' active' : ''}`}
-          onClick={() => handleNavClick('calendar')}
-        >
+
+        <li className={`nav-item${activeView === 'calendar' ? ' active' : ''}`} onClick={() => handleNavClick('calendar')}>
           <span className="nav-icon">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -68,10 +53,20 @@ export function Sidebar({ habits, completions, activeView, onViewChange, onAddHa
           </span>
           Heatmap
         </li>
-        <li
-          className={`nav-item${activeView === 'settings' ? ' active' : ''}`}
-          onClick={() => handleNavClick('settings')}
-        >
+
+        {/* ── AI Coach ── */}
+        <li className={`nav-item${activeView === 'ai-coach' ? ' active' : ''}`} onClick={() => handleNavClick('ai-coach')}>
+          <span className="nav-icon">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
+              <path d="M12 8v4l3 3"/>
+            </svg>
+          </span>
+          AI Coach
+          <span className="nav-badge">AI</span>
+        </li>
+
+        <li className={`nav-item${activeView === 'settings' ? ' active' : ''}`} onClick={() => handleNavClick('settings')}>
           <span className="nav-icon">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="3" />
@@ -92,16 +87,10 @@ export function Sidebar({ habits, completions, activeView, onViewChange, onAddHa
           habits.map((habit) => {
             const streak = getStreak(habit.id, completions);
             return (
-              <div
-                key={habit.id}
-                className="habit-sidebar-item"
-                onClick={() => handleNavClick('today')}
-              >
+              <div key={habit.id} className="habit-sidebar-item" onClick={() => handleNavClick('today')}>
                 <span className="habit-dot" style={{ background: habit.color }} />
                 <span className="habit-sidebar-name">{habit.emoji} {habit.name}</span>
-                <span className="habit-sidebar-streak">
-                  {streak > 0 ? `🔥${streak}` : ''}
-                </span>
+                <span className="habit-sidebar-streak">{streak > 0 ? `🔥${streak}` : ''}</span>
               </div>
             );
           })

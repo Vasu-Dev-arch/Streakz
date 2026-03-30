@@ -4,6 +4,7 @@ import { TodayView } from './components/TodayView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { HeatmapView } from './components/HeatmapView';
 import { SettingsView } from './components/SettingsView';
+import { AiCoachView } from './components/AiCoachView';
 import { HabitModal } from './components/HabitModal';
 import { ConfirmModal } from './components/ConfirmModal';
 import { AuthPage } from './components/AuthPage';
@@ -36,21 +37,11 @@ function ProfileMenu({ user, onSettings, onLogout }) {
         onClick={() => setOpen((v) => !v)}
         title={user?.name ?? 'Profile'}
         style={{
-          width: '36px',
-          height: '36px',
-          borderRadius: '50%',
-          background: 'rgba(124,106,247,0.18)',
-          border: '1.5px solid rgba(124,106,247,0.35)',
-          color: 'var(--accent2)',
-          fontSize: '12px',
-          fontWeight: 600,
-          fontFamily: 'var(--mono)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'background 0.15s',
-          flexShrink: 0,
+          width: '36px', height: '36px', borderRadius: '50%',
+          background: 'rgba(124,106,247,0.18)', border: '1.5px solid rgba(124,106,247,0.35)',
+          color: 'var(--accent2)', fontSize: '12px', fontWeight: 600, fontFamily: 'var(--mono)',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'background 0.15s', flexShrink: 0,
         }}
       >
         {initials}
@@ -58,30 +49,15 @@ function ProfileMenu({ user, onSettings, onLogout }) {
 
       {open && (
         <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 8px)',
-          right: 0,
-          minWidth: '180px',
-          background: 'var(--bg2)',
-          border: '1px solid var(--border2)',
-          borderRadius: '10px',
-          padding: '6px',
-          zIndex: 50,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+          position: 'absolute', top: 'calc(100% + 8px)', right: 0, minWidth: '180px',
+          background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: '10px',
+          padding: '6px', zIndex: 50, boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
         }}>
           {user?.name && (
-            <div style={{
-              padding: '8px 10px 10px',
-              borderBottom: '1px solid var(--border)',
-              marginBottom: '4px',
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
-                {user.name}
-              </div>
+            <div style={{ padding: '8px 10px 10px', borderBottom: '1px solid var(--border)', marginBottom: '4px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>{user.name}</div>
               {user?.email && (
-                <div style={{ fontSize: '11px', color: 'var(--text3)', fontFamily: 'var(--mono)', marginTop: '2px' }}>
-                  {user.email}
-                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text3)', fontFamily: 'var(--mono)', marginTop: '2px' }}>{user.email}</div>
               )}
             </div>
           )}
@@ -109,23 +85,12 @@ function ProfileMenu({ user, onSettings, onLogout }) {
 }
 
 const menuItemStyle = {
-  width: '100%',
-  padding: '8px 10px',
-  borderRadius: '6px',
-  border: 'none',
-  background: 'transparent',
-  color: 'var(--text2)',
-  fontFamily: 'var(--sans)',
-  fontSize: '13px',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  textAlign: 'left',
-  transition: 'background 0.12s',
+  width: '100%', padding: '8px 10px', borderRadius: '6px', border: 'none',
+  background: 'transparent', color: 'var(--text2)', fontFamily: 'var(--sans)',
+  fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+  gap: '8px', textAlign: 'left', transition: 'background 0.12s',
 };
 
-// ── Hamburger icon SVG ────────────────────────────────────────────────────────
 function HamburgerIcon() {
   return (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -175,14 +140,12 @@ function AuthenticatedApp({ token, user, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState(null);
 
-  // Close sidebar on Escape key
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') setSidebarOpen(false); }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // Prevent body scroll when sidebar drawer is open on mobile
   useEffect(() => {
     document.body.style.overflow = sidebarOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -201,19 +164,10 @@ function AuthenticatedApp({ token, user, onLogout }) {
     if (habit) { setEditingHabit(habit); setIsModalOpen(true); }
   };
 
-  const handleDeleteHabit = (id) => {
-    setHabitToDelete(id);
-  };
+  const handleDeleteHabit = (id) => { setHabitToDelete(id); };
 
   const confirmDeleteHabit = () => {
-    if (habitToDelete) {
-      deleteHabit(habitToDelete);
-      setHabitToDelete(null);
-    }
-  };
-
-  const cancelDeleteHabit = () => {
-    setHabitToDelete(null);
+    if (habitToDelete) { deleteHabit(habitToDelete); setHabitToDelete(null); }
   };
 
   const handleSaveHabit = async (habitData) => {
@@ -237,6 +191,7 @@ function AuthenticatedApp({ token, user, onLogout }) {
       case 'today':     return 'Today';
       case 'analytics': return 'Analytics';
       case 'calendar':  return 'Heatmap';
+      case 'ai-coach':  return 'AI Coach';
       case 'settings':  return 'Settings';
       default:          return 'Today';
     }
@@ -262,10 +217,18 @@ function AuthenticatedApp({ token, user, onLogout }) {
             onDeleteHabit={handleDeleteHabit}
             onGoalChange={updateDailyGoal}
             onReminderChange={updateReminderTime}
+            onNavigateToAiCoach={() => setActiveView('ai-coach')}
           />
         );
       case 'analytics': return <AnalyticsView habits={habits} completions={completions} />;
       case 'calendar':  return <HeatmapView habits={habits} completions={completions} />;
+      case 'ai-coach':
+        return (
+          <AiCoachView
+            onAddHabit={addHabit}
+            categories={categories}
+          />
+        );
       case 'settings':  return <SettingsView />;
       default:          return null;
     }
@@ -273,7 +236,6 @@ function AuthenticatedApp({ token, user, onLogout }) {
 
   return (
     <div className="app">
-      {/* Overlay backdrop — only active on mobile when sidebar is open */}
       <div
         className={`sidebar-overlay${sidebarOpen ? ' sidebar--open' : ''}`}
         onClick={() => setSidebarOpen(false)}
@@ -292,13 +254,8 @@ function AuthenticatedApp({ token, user, onLogout }) {
 
       <main className="main">
         <div className="main-header">
-          {/* Left side: hamburger (mobile) + title */}
           <div className="header-left">
-            <button
-              className="hamburger"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open menu"
-            >
+            <button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
               <HamburgerIcon />
             </button>
             <div className="header-title-block">
@@ -307,8 +264,16 @@ function AuthenticatedApp({ token, user, onLogout }) {
             </div>
           </div>
 
-          {/* Right side: actions */}
           <div className="header-actions">
+            {/* AI Coach shortcut button in header */}
+            <button
+              className="btn-sm ai-coach-header-btn"
+              onClick={() => setActiveView('ai-coach')}
+              title="AI Habit Coach"
+              style={activeView === 'ai-coach' ? { color: 'var(--accent2)', borderColor: 'rgba(124,106,247,0.4)' } : {}}
+            >
+              ✦ AI Coach
+            </button>
             <button className="btn-sm" onClick={handleAddHabit}>+ New Habit</button>
             <ProfileMenu
               user={user}
@@ -335,7 +300,7 @@ function AuthenticatedApp({ token, user, onLogout }) {
         title="Delete Habit"
         message="Are you sure you want to delete this habit? All completion data will be lost."
         onConfirm={confirmDeleteHabit}
-        onCancel={cancelDeleteHabit}
+        onCancel={() => setHabitToDelete(null)}
       />
     </div>
   );
