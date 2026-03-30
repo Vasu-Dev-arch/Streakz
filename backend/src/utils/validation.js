@@ -27,7 +27,7 @@ export function parseDailyGoal(value) {
  * @param {boolean} partial - PUT: only validate fields that are present
  */
 export function validateHabitBody(body, partial = false) {
-  const { name, emoji, color, category } = body || {};
+  const { name, emoji, icon, color, category, description, frequencyType, daysOfWeek } = body || {};
 
   if (!partial) {
     if (name === undefined || typeof name !== 'string' || !name.trim()) {
@@ -58,7 +58,38 @@ export function validateHabitBody(body, partial = false) {
     throw new AppError('emoji must be a string', 400);
   }
 
+  if (icon !== undefined && typeof icon !== 'string') {
+    throw new AppError('icon must be a string', 400);
+  }
+
   if (color !== undefined && typeof color !== 'string') {
     throw new AppError('color must be a string', 400);
+  }
+
+  if (description !== undefined && typeof description !== 'string') {
+    throw new AppError('description must be a string', 400);
+  }
+
+  if (description !== undefined && description.length > 500) {
+    throw new AppError('description cannot exceed 500 characters', 400);
+  }
+
+  if (frequencyType !== undefined) {
+    if (!['daily', 'weekly'].includes(frequencyType)) {
+      throw new AppError('frequencyType must be "daily" or "weekly"', 400);
+    }
+  }
+
+  if (daysOfWeek !== undefined) {
+    if (!Array.isArray(daysOfWeek)) {
+      throw new AppError('daysOfWeek must be an array', 400);
+    }
+    if (daysOfWeek.some((d) => typeof d !== 'number' || d < 0 || d > 6)) {
+      throw new AppError('daysOfWeek values must be numbers between 0 and 6', 400);
+    }
+  }
+
+  if (frequencyType === 'weekly' && daysOfWeek !== undefined && daysOfWeek.length === 0) {
+    throw new AppError('daysOfWeek must have at least one day when frequencyType is weekly', 400);
   }
 }

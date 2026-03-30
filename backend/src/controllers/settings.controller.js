@@ -3,7 +3,6 @@ import { parseDailyGoal } from '../utils/validation.js';
 import { AppError } from '../middleware/AppError.js';
 
 export async function getSettings(req, res) {
-  console.log('Auth Debug - req.user:', req.user);
   if (!req.user || !req.user.id) {
     return res.status(401).json({ message: 'Not authorized, user data missing' });
   }
@@ -13,17 +12,17 @@ export async function getSettings(req, res) {
       userId: req.user.id,
       dailyGoal: 3,
       reminderTime: null,
+      categories: ['study', 'fitness', 'work'],
     });
   }
   res.json(doc.toJSON());
 }
 
 export async function updateSettings(req, res) {
-  console.log('Auth Debug - req.user:', req.user);
   if (!req.user || !req.user.id) {
     return res.status(401).json({ message: 'Not authorized, user data missing' });
   }
-  const { dailyGoal, reminderTime } = req.body || {};
+  const { dailyGoal, reminderTime, categories } = req.body || {};
   const updates = {};
 
   if (dailyGoal !== undefined) {
@@ -34,6 +33,15 @@ export async function updateSettings(req, res) {
       throw new AppError('reminderTime must be a string or null', 400);
     }
     updates.reminderTime = reminderTime || null;
+  }
+  if (categories !== undefined) {
+    if (!Array.isArray(categories)) {
+      throw new AppError('categories must be an array', 400);
+    }
+    if (categories.some((c) => typeof c !== 'string' || !c.trim())) {
+      throw new AppError('All categories must be non-empty strings', 400);
+    }
+    updates.categories = categories.map((c) => c.trim());
   }
 
   if (Object.keys(updates).length === 0) {

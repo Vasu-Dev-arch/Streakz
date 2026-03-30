@@ -2,14 +2,15 @@ import React, { useEffect, useRef } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { dateKey, getStreak, getBestStreak, getCompletionRate } from '../utils/dateUtils';
 import { MONTHS } from '../constants';
+import { HabitIcon } from './HabitIcon';
 
 Chart.register(...registerables);
 
 export function AnalyticsView({ habits, completions }) {
   const weeklyChartRef = useRef(null);
-  const donutChartRef  = useRef(null);
-  const dailyChartRef  = useRef(null);
-  const chartsRef      = useRef({});
+  const donutChartRef = useRef(null);
+  const dailyChartRef = useRef(null);
+  const chartsRef = useRef({});
 
   useEffect(() => {
     if (habits.length > 0) {
@@ -36,7 +37,7 @@ export function AnalyticsView({ habits, completions }) {
       let total = 0, possible = 0;
       weekDays.forEach(dd => {
         const k = dateKey(dd);
-        total    += completions[k] ? completions[k].size : 0;
+        total += completions[k] ? completions[k].size : 0;
         possible += habits.length;
       });
       data.push(possible ? Math.round((total / possible) * 100) : 0);
@@ -58,7 +59,7 @@ export function AnalyticsView({ habits, completions }) {
 
   const renderDonutChart = () => {
     if (!habits.length) return;
-    const data   = habits.map(h => { let c = 0; Object.values(completions).forEach(s => { if (s.has(h.id)) c++; }); return c; });
+    const data = habits.map(h => { let c = 0; Object.values(completions).forEach(s => { if (s.has(h.id)) c++; }); return c; });
     chartsRef.current.donut?.destroy();
     chartsRef.current.donut = new Chart(donutChartRef.current.getContext('2d'), {
       type: 'doughnut',
@@ -72,7 +73,7 @@ export function AnalyticsView({ habits, completions }) {
     const d = new Date();
     for (let i = 29; i >= 0; i--) {
       const dd = new Date(d); dd.setDate(d.getDate() - i);
-      const k  = dateKey(dd);
+      const k = dateKey(dd);
       labels.push(i === 0 ? 'Today' : i % 5 === 0 ? `${MONTHS[dd.getMonth()]} ${dd.getDate()}` : '');
       data.push(completions[k] ? completions[k].size : 0);
     }
@@ -126,20 +127,27 @@ export function AnalyticsView({ habits, completions }) {
         ) : (
           habits.map((habit) => {
             const streak = getStreak(habit.id, completions);
-            const best   = getBestStreak(habit.id, completions);
+            const best = getBestStreak(habit.id, completions);
             const rate30 = getCompletionRate(habit.id, completions, 30);
-            const rate7  = getCompletionRate(habit.id, completions, 7);
+            const rate7 = getCompletionRate(habit.id, completions, 7);
             return (
               <div key={habit.id} className="chart-card" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <span style={{ fontSize: '26px', flexShrink: 0 }}>{habit.emoji}</span>
+                <div
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '12px',
+                    background: `${habit.color}20`, display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}
+                >
+                  <HabitIcon iconId={habit.icon} emoji={habit.emoji} size={20} color={habit.color} />
+                </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{habit.name}</div>
-                  {/* perf-stats-grid: 4 cols desktop, 2 cols mobile via CSS class */}
                   <div className="perf-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                     {[
                       { label: 'Streak', value: `${streak}d`, color: 'var(--amber)' },
-                      { label: 'Best',   value: `${best}d`,   color: 'var(--accent2)' },
-                      { label: '7-day',  value: `${rate7}%`,  color: 'var(--teal)' },
+                      { label: 'Best', value: `${best}d`, color: 'var(--accent2)' },
+                      { label: '7-day', value: `${rate7}%`, color: 'var(--teal)' },
                       { label: '30-day', value: `${rate30}%`, color: 'var(--green)' },
                     ].map(({ label, value, color }) => (
                       <div key={label}>

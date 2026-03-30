@@ -1,156 +1,210 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { dateKey, getStreak, getBestStreak, getCompletionRate } from '../utils/dateUtils';
-import { MONTHS } from '../constants';
+import { MONTHS, DAY_LETTERS } from '../constants';
+import { HabitIcon } from './HabitIcon';
 
 /**
- * Heatmap view component showing completion heatmaps
+ * Build a 26-week grid of day cells.
+ * Returns { cols, monthLabels } where cols is an array of 7-cell column arrays.
  */
-export function HeatmapView({ habits, completions }) {
-  const [tooltip, setTooltip] = useState({ show: false, text: '', x: 0, y: 0 });
+function buildGrid(getCellValue, getMax, showTip, hideTip) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const WEEKS = 26;
 
-  const showTip = (e, text) => {
-    setTooltip({
-      show: true,
-      text,
-      x: e.clientX + 12,
-      y: e.clientY - 28,
-    });
-  };
+  // Find the Sunday that starts our grid
+  const gridStart = new Date(today);
+  gridStart.setDate(today.getDate() - WEEKS * 7 + 1);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay()); // snap to Sunday
 
-  const hideTip = () => {
-    setTooltip({ show: false, text: '', x: 0, y: 0 });
-  };
+  const maxVal = getMax();
+  const cols = [];
+  const monthLabels = [];
+  let lastMonth = -1;
 
-  const buildHeatmapHTML = (getCellValue, getMax) => {
-    const today = new Date();
-    const weeks = 26;
-    const totalDays = weeks * 7;
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - totalDays + 1);
-    // Align to Sunday
-    startDate.setDate(startDate.getDate() - startDate.getDay());
+  for (let w = 0; w < WEEKS; w++) {
+    const col = [];
 
-    const maxVal = getMax();
-    const cols = [];
-    const monthLabels = [];
-    let lastMonth = -1;
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(gridStart);
+      date.setDate(gridStart.getDate() + w * 7 + d);
+      const k = dateKey(date);
+      const val = getCellValue(k, date);
+      const level = maxVal > 0 ? Math.min(5, Math.ceil((val / maxVal) * 5)) : 0;
+      const isFuture = date > today;
+      const isToday = k === dateKey(today);
+      const tipText = `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}: ${val}`;
 
-    for (let w = 0; w < weeks; w++) {
-      const col = [];
-      for (let d = 0; d < 7; d++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + w * 7 + d);
-        const k = dateKey(date);
-        const val = getCellValue(k, date);
-        const level = maxVal ? Math.ceil((val / maxVal) * 5) : 0;
-        const isFuture = date > today;
-        const isToday = dateKey(date) === dateKey(today);
-        const title = `${date.toDateString()}: ${val}`;
-        
-        col.push(
-          <div
-            key={d}
-            className={`heatmap-sq${!isFuture && level ? ` l${level}` : ''}`}
-            style={isToday ? { outline: '1px solid #7c6af7' } : {}}
-            title={title}
-            onMouseMove={(e) => showTip(e, title)}
-            onMouseLeave={hideTip}
-          ></div>
-        );
-        
-        if (d === 0) {
-          if (date.getMonth() !== lastMonth) {
-            monthLabels.push(
-              <span key={w} style={{ minWidth: `${7 * 14 + 2}px` }}>
-                {MONTHS[date.getMonth()]}
-              </span>
-            );
-            lastMonth = date.getMonth();
-          } else {
-            monthLabels.push(
-              <span key={w} style={{ minWidth: `${7 * 14 + 2}px` }}></span>
-            );
-          }
-        }
-      }
-      cols.push(
-        <div key={w} className="heatmap-col">
-          {col}
-        </div>
+      col.push(
+        <div
+          key={`${w}-${d}`}
+          className={`heatmap-sq${!isFuture && level > 0 ? ` l${level}` : ''}${isFuture ? ' heatmap-sq--future' : ''}`}
+          style={isToday ? { outline: '1.5px solid var(--accent)', outlineOffset: '1px' } : undefined}
+          title={tipText}
+          onMouseMove={(e) => showTip(e, tipText)}
+          onMouseLeave={hideTip}
+        />
       );
     }
 
-    const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((l, i) => (
-      <div key={i} className="heatmap-day-label" style={{ fontSize: '9px' }}>
-        {l}
-      </div>
-    ));
-
-    return (
-      <div className="heatmap-scroll" style={{ overflowX: 'auto' }}>
-        <div className="heatmap-months" style={{ paddingLeft: '22px', gap: 0 }}>
-          {monthLabels}
-        </div>
-        <div className="heatmap-main">
-          <div className="heatmap-days">{dayLabels}</div>
-          <div className="heatmap-cols">{cols}</div>
-        </div>
+    cols.push(
+      <div key={w} className="heatmap-col">
+        {col}
       </div>
     );
-  };
 
-  const renderOverallHeatmap = () => {
-    const getMax = () => habits.length;
-    const getCellValue = (k) => (completions[k] ? completions[k].size : 0);
-    return buildHeatmapHTML(getCellValue, getMax);
-  };
-
-  const renderHabitHeatmaps = () => {
-    if (!habits.length) return null;
-
-    return habits.map((habit) => {
-      const getMax = () => 1;
-      const getCellValue = (k) => (completions[k]?.has(habit.id) ? 1 : 0);
-      
-      return (
-        <div key={habit.id} className="chart-card" style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '20px' }}>{habit.emoji}</span>
-            <div>
-              <div className="chart-title">{habit.name}</div>
-              <div className="chart-sub">
-                Current: {getStreak(habit.id, completions)}d streak · Best: {getBestStreak(habit.id, completions)}d · 30-day: {getCompletionRate(habit.id, completions, 30)}%
-              </div>
-            </div>
-          </div>
-          {buildHeatmapHTML(getCellValue, getMax)}
-        </div>
+    // Month label for this column
+    const colDate = new Date(gridStart);
+    colDate.setDate(gridStart.getDate() + w * 7);
+    const month = colDate.getMonth();
+    if (month !== lastMonth) {
+      monthLabels.push(
+        <span key={w} style={{ minWidth: `${7 * 14 + 2}px`, display: 'inline-block' }}>
+          {MONTHS[month]}
+        </span>
       );
-    });
-  };
+      lastMonth = month;
+    } else {
+      monthLabels.push(
+        <span key={w} style={{ minWidth: `${7 * 14 + 2}px`, display: 'inline-block' }} />
+      );
+    }
+  }
+
+  return { cols, monthLabels };
+}
+
+function HeatmapGrid({ getCellValue, getMax, showTip, hideTip }) {
+  const { cols, monthLabels } = useMemo(
+    () => buildGrid(getCellValue, getMax, showTip, hideTip),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const dayLabels = DAY_LETTERS.map((l, i) => (
+    <div key={i} className="heatmap-day-label" style={{ fontSize: '9px', height: '14px', display: 'flex', alignItems: 'center' }}>
+      {i % 2 === 1 ? l : ''}
+    </div>
+  ));
+
+  return (
+    <div style={{ overflowX: 'auto', overflowY: 'hidden', paddingBottom: '4px' }}>
+      <div style={{ minWidth: 'max-content' }}>
+        <div
+          className="heatmap-months"
+          style={{ paddingLeft: '26px', display: 'flex', gap: 0, fontSize: '10px', color: 'var(--text3)', fontFamily: 'var(--mono)', marginBottom: '4px' }}
+        >
+          {monthLabels}
+        </div>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingTop: '1px', width: '18px' }}>
+            {dayLabels}
+          </div>
+          <div style={{ display: 'flex', gap: '2px' }}>
+            {cols}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function HeatmapView({ habits, completions }) {
+  const [tooltip, setTooltip] = useState({ show: false, text: '', x: 0, y: 0 });
+
+  const showTip = (e, text) =>
+    setTooltip({ show: true, text, x: e.clientX + 14, y: e.clientY - 34 });
+
+  const hideTip = () =>
+    setTooltip({ show: false, text: '', x: 0, y: 0 });
+
+  // Overall heatmap: count habits completed per day
+  const overallGetMax = () => Math.max(habits.length, 1);
+  const overallGetCell = (k) => completions[k] ? completions[k].size : 0;
 
   return (
     <div className="view active">
+      {/* Overall */}
       <div className="chart-card" style={{ marginBottom: '20px' }}>
         <div className="chart-title">Overall completion heatmap</div>
-        <div className="chart-sub">
-          Past 26 weeks — darker = more habits completed that day
+        <div className="chart-sub">Past 26 weeks — darker = more habits completed that day</div>
+        <div style={{ marginTop: '16px' }}>
+          <HeatmapGrid
+            getCellValue={overallGetCell}
+            getMax={overallGetMax}
+            showTip={showTip}
+            hideTip={hideTip}
+          />
         </div>
-        <div className="heatmap-scroll" style={{ marginTop: '16px', overflowX: 'auto' }}>
-          {renderOverallHeatmap()}
+
+        {/* Legend */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px', justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: '10px', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>Less</span>
+          {[0, 1, 2, 3, 4, 5].map((l) => (
+            <div
+              key={l}
+              style={{
+                width: '12px', height: '12px', borderRadius: '2px',
+                background: l === 0 ? 'var(--bg4)' :
+                  l === 1 ? 'rgba(124,106,247,0.2)' :
+                  l === 2 ? 'rgba(124,106,247,0.38)' :
+                  l === 3 ? 'rgba(124,106,247,0.56)' :
+                  l === 4 ? 'rgba(124,106,247,0.78)' :
+                  'var(--accent2)',
+              }}
+            />
+          ))}
+          <span style={{ fontSize: '10px', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>More</span>
         </div>
       </div>
-      
-      {renderHabitHeatmaps()}
-      
+
+      {/* Per-habit heatmaps */}
+      {habits.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon" style={{ fontSize: '40px' }}>📅</div>
+          <div className="empty-text">No habits yet</div>
+          <div className="empty-sub">Add habits to see your heatmap</div>
+        </div>
+      ) : (
+        habits.map((habit) => {
+          const habitGetMax = () => 1;
+          const habitGetCell = (k) => completions[k]?.has(habit.id) ? 1 : 0;
+
+          return (
+            <div key={habit.id} className="chart-card" style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                <div
+                  style={{
+                    width: '36px', height: '36px', borderRadius: '10px',
+                    background: `${habit.color}20`, display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}
+                >
+                  <HabitIcon iconId={habit.icon} emoji={habit.emoji} size={18} color={habit.color} />
+                </div>
+                <div>
+                  <div className="chart-title" style={{ marginBottom: '2px' }}>{habit.name}</div>
+                  <div className="chart-sub" style={{ marginBottom: 0 }}>
+                    Current: {getStreak(habit.id, completions)}d · Best: {getBestStreak(habit.id, completions)}d · 30-day: {getCompletionRate(habit.id, completions, 30)}%
+                  </div>
+                </div>
+              </div>
+
+              <HeatmapGrid
+                getCellValue={habitGetCell}
+                getMax={habitGetMax}
+                showTip={showTip}
+                hideTip={hideTip}
+              />
+            </div>
+          );
+        })
+      )}
+
       {tooltip.show && (
         <div
           className="tooltip"
-          style={{
-            display: 'block',
-            left: tooltip.x,
-            top: tooltip.y,
-          }}
+          style={{ display: 'block', position: 'fixed', left: tooltip.x, top: tooltip.y, zIndex: 500 }}
         >
           {tooltip.text}
         </div>

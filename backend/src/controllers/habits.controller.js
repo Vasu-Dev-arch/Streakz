@@ -4,7 +4,6 @@ import { AppError } from '../middleware/AppError.js';
 import { assertObjectId, validateHabitBody } from '../utils/validation.js';
 
 export async function listHabits(req, res) {
-  console.log('Auth Debug - req.user:', req.user);
   if (!req.user || !req.user.id) {
     return res.status(401).json({ message: 'Not authorized, user data missing' });
   }
@@ -12,9 +11,13 @@ export async function listHabits(req, res) {
   const mapped = habits.map((h) => ({
     id: h._id.toString(),
     name: h.name,
+    description: h.description ?? '',
     emoji: h.emoji,
+    icon: h.icon ?? '',
     color: h.color,
     category: h.category,
+    frequencyType: h.frequencyType ?? 'daily',
+    daysOfWeek: h.daysOfWeek ?? [],
     createdAt: h.createdAt,
     updatedAt: h.updatedAt,
   }));
@@ -22,24 +25,27 @@ export async function listHabits(req, res) {
 }
 
 export async function createHabit(req, res) {
-  console.log('Auth Debug - req.user:', req.user);
   if (!req.user || !req.user.id) {
     return res.status(401).json({ message: 'Not authorized, user data missing' });
   }
   validateHabitBody(req.body, false);
-  const { name, emoji, color, category } = req.body;
+  const { name, emoji, icon, color, category, description, frequencyType, daysOfWeek } = req.body;
+
   const habit = await Habit.create({
     userId: req.user.id,
     name: name.trim(),
+    description: description ? description.trim() : '',
     emoji: emoji ?? '',
+    icon: icon ?? '',
     color: color ?? '#22c97a',
     category,
+    frequencyType: frequencyType ?? 'daily',
+    daysOfWeek: daysOfWeek ?? [],
   });
   res.status(201).json(habit.toJSON());
 }
 
 export async function updateHabit(req, res) {
-  console.log('Auth Debug - req.user:', req.user);
   if (!req.user || !req.user.id) {
     return res.status(401).json({ message: 'Not authorized, user data missing' });
   }
@@ -48,11 +54,14 @@ export async function updateHabit(req, res) {
 
   const updates = {};
   if (req.body.name !== undefined) updates.name = req.body.name.trim();
+  if (req.body.description !== undefined) updates.description = req.body.description.trim();
   if (req.body.emoji !== undefined) updates.emoji = req.body.emoji;
+  if (req.body.icon !== undefined) updates.icon = req.body.icon;
   if (req.body.color !== undefined) updates.color = req.body.color;
   if (req.body.category !== undefined) updates.category = req.body.category;
+  if (req.body.frequencyType !== undefined) updates.frequencyType = req.body.frequencyType;
+  if (req.body.daysOfWeek !== undefined) updates.daysOfWeek = req.body.daysOfWeek;
 
-  // userId filter ensures users can only edit their own habits
   const habit = await Habit.findOneAndUpdate(
     { _id: req.params.id, userId: req.user.id },
     updates,
@@ -65,7 +74,6 @@ export async function updateHabit(req, res) {
 }
 
 export async function deleteHabit(req, res) {
-  console.log('Auth Debug - req.user:', req.user);
   if (!req.user || !req.user.id) {
     return res.status(401).json({ message: 'Not authorized, user data missing' });
   }
@@ -74,7 +82,6 @@ export async function deleteHabit(req, res) {
   if (!habit) {
     throw new AppError('Habit not found', 404);
   }
-  // Remove from this user's completion docs only
   await Completion.updateMany(
     { userId: req.user.id },
     { $pull: { habitIds: habit._id } }

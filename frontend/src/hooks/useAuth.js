@@ -19,6 +19,7 @@ export function useAuth() {
   const [token, setTokenState] = useState(() => getToken());
   const [user, setUser] = useState(null);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [firstHabitPromptShown, setFirstHabitPromptShown] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -27,6 +28,7 @@ export function useAuth() {
     setTokenState(t);
     setUser(u);
     setIsFirstLogin(u?.isFirstLogin ?? false);
+    setFirstHabitPromptShown(u?.firstHabitPromptShown ?? false);
     setError(null);
   }, []);
 
@@ -90,6 +92,7 @@ export function useAuth() {
       setToken(token);
       setTokenState(token);
       setIsFirstLogin(firstLogin);
+      setFirstHabitPromptShown(false);
       setError(null);
       return { ok: true, isFirstLogin: firstLogin };
     }
@@ -99,15 +102,12 @@ export function useAuth() {
   }, []);
 
   // ── Profile updates ─────────────────────────────────────────────────────────
-  /**
-   * Update user name (and optionally isFirstLogin flag).
-   * Used by WelcomePage to save the chosen name.
-   */
-  const updateProfile = useCallback(async ({ name, isFirstLogin: ifl } = {}) => {
+  const updateProfile = useCallback(async ({ name, isFirstLogin: ifl, firstHabitPromptShown: fhps } = {}) => {
     const tk = getToken();
     const body = {};
     if (name !== undefined) body.name = name;
     if (ifl !== undefined) body.isFirstLogin = ifl;
+    if (fhps !== undefined) body.firstHabitPromptShown = fhps;
 
     const res = await fetch(`${API_BASE}/api/auth/profile`, {
       method: 'PATCH',
@@ -122,6 +122,7 @@ export function useAuth() {
 
     setUser((prev) => ({ ...prev, ...data }));
     if (data.isFirstLogin !== undefined) setIsFirstLogin(data.isFirstLogin);
+    if (data.firstHabitPromptShown !== undefined) setFirstHabitPromptShown(data.firstHabitPromptShown);
     return data;
   }, []);
 
@@ -133,18 +134,50 @@ export function useAuth() {
     setIsFirstLogin(false);
   }, [updateProfile]);
 
+  /**
+   * Mark the first-habit prompt as shown — persisted to backend.
+   */
+  const markFirstHabitPromptShown = useCallback(async () => {
+    setFirstHabitPromptShown(true);
+    try {
+      await updateProfile({ firstHabitPromptShown: true });
+    } catch (err) {
+      console.error('Failed to mark firstHabitPromptShown:', err);
+    }
+  }, [updateProfile]);
+
+  // ── Fetch current user from backend (used on app load) ──────────────────────
+  const fetchMe = useCallback(async () => {
+    const tk = getToken();
+    if (!tk) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${tk}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setUser(data);
+      setIsFirstLogin(data.isFirstLogin ?? false);
+      setFirstHabitPromptShown(data.firstHabitPromptShown ?? false);
+    } catch {
+      // silently fail
+    }
+  }, []);
+
   // ── Logout ──────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
     clearToken();
     setTokenState(null);
     setUser(null);
     setIsFirstLogin(false);
+    setFirstHabitPromptShown(false);
   }, []);
 
   return {
     token,
     user,
     isFirstLogin,
+    firstHabitPromptShown,
     error,
     loading,
     signup,
@@ -153,6 +186,8 @@ export function useAuth() {
     handleGoogleCallback,
     updateProfile,
     completeOnboarding,
+    markFirstHabitPromptShown,
+    fetchMe,
     logout,
   };
 }

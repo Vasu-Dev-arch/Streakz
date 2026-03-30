@@ -5,7 +5,7 @@ const settingsSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-    unique: true, // one settings doc per user
+    unique: true,
   },
   dailyGoal: {
     type: Number,
@@ -17,6 +17,10 @@ const settingsSchema = new mongoose.Schema({
   reminderTime: {
     type: String,
     default: null,
+  },
+  categories: {
+    type: [String],
+    default: ['study', 'fitness', 'work'],
   },
 });
 

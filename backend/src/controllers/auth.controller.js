@@ -59,6 +59,7 @@ export async function me(req, res) {
     name: user.name,
     email: user.email,
     isFirstLogin: user.isFirstLogin,
+    firstHabitPromptShown: user.firstHabitPromptShown ?? false,
     createdAt: user.createdAt,
   });
 }
@@ -66,11 +67,12 @@ export async function me(req, res) {
 /**
  * PATCH /api/auth/profile
  * Body can contain:
- *   name          — update display name
- *   isFirstLogin  — set to false to mark onboarding complete
+ *   name                  — update display name
+ *   isFirstLogin          — set to false to mark onboarding complete
+ *   firstHabitPromptShown — set to true once the post-onboarding prompt is shown
  */
 export async function updateProfile(req, res) {
-  const { name, isFirstLogin } = req.body || {};
+  const { name, isFirstLogin, firstHabitPromptShown } = req.body || {};
   const updates = {};
 
   if (name !== undefined) {
@@ -82,6 +84,10 @@ export async function updateProfile(req, res) {
 
   if (isFirstLogin !== undefined) {
     updates.isFirstLogin = Boolean(isFirstLogin);
+  }
+
+  if (firstHabitPromptShown !== undefined) {
+    updates.firstHabitPromptShown = Boolean(firstHabitPromptShown);
   }
 
   if (Object.keys(updates).length === 0) {
@@ -101,6 +107,7 @@ export async function updateProfile(req, res) {
     name: user.name,
     email: user.email,
     isFirstLogin: user.isFirstLogin,
+    firstHabitPromptShown: user.firstHabitPromptShown ?? false,
     createdAt: user.createdAt,
   });
 }

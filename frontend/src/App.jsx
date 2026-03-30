@@ -7,6 +7,7 @@ import { SettingsView } from './components/SettingsView';
 import { AiCoachView } from './components/AiCoachView';
 import { HabitModal } from './components/HabitModal';
 import { ConfirmModal } from './components/ConfirmModal';
+import { FirstHabitPrompt } from './components/FirstHabitPrompt';
 import { AuthPage } from './components/AuthPage';
 import { AuthCallbackPage } from './components/AuthCallbackPage';
 import { WelcomePage } from './components/WelcomePage';
@@ -48,14 +49,6 @@ function ProfileMenu({ user, onSettings, onLogout }) {
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'background 0.15s, border-color 0.15s', flexShrink: 0,
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(124,106,247,0.3)';
-          e.currentTarget.style.borderColor = 'rgba(124,106,247,0.5)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(124,106,247,0.18)';
-          e.currentTarget.style.borderColor = 'rgba(124,106,247,0.35)';
-        }}
       >
         {initials}
       </button>
@@ -83,11 +76,11 @@ function ProfileMenu({ user, onSettings, onLogout }) {
               onMouseLeave={() => setThemeMenuOpen(false)}
             >
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
-                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
               </svg>
               Themes
               <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 'auto', flexShrink: 0, transform: 'rotate(180deg)' }}>
-                <path d="M9 18l6-6-6-6"/>
+                <path d="M9 18l6-6-6-6" />
               </svg>
             </button>
             {themeMenuOpen && (
@@ -97,9 +90,9 @@ function ProfileMenu({ user, onSettings, onLogout }) {
                 onMouseLeave={() => setThemeMenuOpen(false)}
               >
                 {[
-                  { id: null, label: 'System', icon: <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>, check: !localStorage.getItem('habit-tracker-theme-id') },
-                  { id: 'dark', label: 'Dark', icon: <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>, check: currentThemeId === 'dark' },
-                  { id: 'light', label: 'Light', icon: <><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></>, check: currentThemeId === 'light' },
+                  { id: null, label: 'System', check: !localStorage.getItem('habit-tracker-theme-id') },
+                  { id: 'dark', label: 'Dark', check: currentThemeId === 'dark' },
+                  { id: 'light', label: 'Light', check: currentThemeId === 'light' },
                 ].map((t) => (
                   <button
                     key={t.label}
@@ -110,7 +103,6 @@ function ProfileMenu({ user, onSettings, onLogout }) {
                     }}
                     style={{ ...menuItemStyle, ...(t.check ? { background: 'var(--bg3)', color: 'var(--text)' } : {}) }}
                   >
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>{t.icon}</svg>
                     {t.label}
                     {t.check && <span style={{ marginLeft: 'auto' }}>✓</span>}
                   </button>
@@ -121,8 +113,8 @@ function ProfileMenu({ user, onSettings, onLogout }) {
 
           <button onClick={() => { setOpen(false); onSettings(); }} style={menuItemStyle}>
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
             </svg>
             Settings
           </button>
@@ -131,7 +123,7 @@ function ProfileMenu({ user, onSettings, onLogout }) {
 
           <button onClick={() => { setOpen(false); onLogout(); }} style={{ ...menuItemStyle, color: 'var(--red)' }}>
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
-              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
             </svg>
             Log out
           </button>
@@ -151,9 +143,9 @@ const menuItemStyle = {
 function HamburgerIcon() {
   return (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <line x1="3" y1="6"  x2="21" y2="6"  strokeLinecap="round"/>
-      <line x1="3" y1="12" x2="21" y2="12" strokeLinecap="round"/>
-      <line x1="3" y1="18" x2="21" y2="18" strokeLinecap="round"/>
+      <line x1="3" y1="6" x2="21" y2="6" strokeLinecap="round" />
+      <line x1="3" y1="12" x2="21" y2="12" strokeLinecap="round" />
+      <line x1="3" y1="18" x2="21" y2="18" strokeLinecap="round" />
     </svg>
   );
 }
@@ -161,20 +153,18 @@ function HamburgerIcon() {
 // ── Root router ───────────────────────────────────────────────────────────────
 function App() {
   const {
-    token, user, isFirstLogin, error, loading,
+    token, user, isFirstLogin, firstHabitPromptShown, error, loading,
     login, signup, loginWithGoogle, handleGoogleCallback,
-    updateProfile, completeOnboarding, logout,
+    updateProfile, completeOnboarding, markFirstHabitPromptShown, logout,
   } = useAuth();
 
   const path = window.location.pathname;
 
-  // ── /auth/callback — handles both email/password (no-op) and Google OAuth
   if (path === '/auth/callback') {
     return (
       <AuthCallbackPage
         handleGoogleCallback={handleGoogleCallback}
         onSuccess={(result) => {
-          // result.isFirstLogin comes from Google OAuth redirect
           if (result?.isFirstLogin) {
             window.location.replace('/welcome');
           } else {
@@ -186,20 +176,11 @@ function App() {
     );
   }
 
-  // Not logged in → auth page
   if (!token) {
     return (
       <AuthPage
-        onLogin={async (creds) => {
-          await login(creds);
-          // login sets isFirstLogin from the user object returned by the API.
-          // We can't read the updated state here synchronously, so we rely on
-          // the re-render: App will re-evaluate and route correctly.
-        }}
-        onSignup={async (creds) => {
-          await signup(creds);
-          // New signup always triggers first-login flow — handled after re-render.
-        }}
+        onLogin={async (creds) => { await login(creds); }}
+        onSignup={async (creds) => { await signup(creds); }}
         onGoogleLogin={loginWithGoogle}
         error={error}
         loading={loading}
@@ -207,15 +188,11 @@ function App() {
     );
   }
 
-  // ── Logged in — check onboarding state ────────────────────────────────────
-
-  // /welcome — collect username for first-timers
   if (path === '/welcome' || (isFirstLogin && path !== '/onboarding')) {
     return (
       <WelcomePage
         initialName={user?.name || ''}
         onContinue={async (name) => {
-          // Save name but keep isFirstLogin=true until onboarding completes
           await updateProfile({ name });
           window.location.replace('/onboarding');
         }}
@@ -223,29 +200,39 @@ function App() {
     );
   }
 
-  // /onboarding — feature showcase
   if (path === '/onboarding') {
     return (
       <OnboardingPage
         onFinish={async () => {
-          await completeOnboarding(); // sets isFirstLogin = false
+          await completeOnboarding();
           window.location.replace('/');
         }}
       />
     );
   }
 
-  // Dashboard
-  return <AuthenticatedApp token={token} user={user} onLogout={logout} />;
+  return (
+    <AuthenticatedApp
+      token={token}
+      user={user}
+      firstHabitPromptShown={firstHabitPromptShown}
+      markFirstHabitPromptShown={markFirstHabitPromptShown}
+      onLogout={logout}
+    />
+  );
 }
 
 // ── Authenticated app shell ───────────────────────────────────────────────────
-function AuthenticatedApp({ token, user, onLogout }) {
+function AuthenticatedApp({ token, user, firstHabitPromptShown, markFirstHabitPromptShown, onLogout }) {
   const [activeView, setActiveView] = useState('today');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState(null);
+
+  // First-habit prompt: show once after onboarding
+  const [showFirstHabitPrompt, setShowFirstHabitPrompt] = useState(false);
+  const promptTimerRef = useRef(null);
 
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') setSidebarOpen(false); }
@@ -263,6 +250,31 @@ function AuthenticatedApp({ token, user, onLogout }) {
     toggleHabit, addHabit, updateHabit, deleteHabit,
     updateDailyGoal, updateReminderTime, addCategory,
   } = useHabits(token);
+
+  // Show prompt once after data loads if not yet shown
+  useEffect(() => {
+    if (!firstHabitPromptShown && habits.length === 0) {
+      // Small delay so the dashboard renders first
+      promptTimerRef.current = setTimeout(() => {
+        setShowFirstHabitPrompt(true);
+      }, 600);
+    }
+    return () => clearTimeout(promptTimerRef.current);
+    // Run once when habits are first known
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstHabitPromptShown]);
+
+  const handleDismissFirstHabitPrompt = async () => {
+    setShowFirstHabitPrompt(false);
+    await markFirstHabitPromptShown();
+  };
+
+  const handleFirstHabitAdd = async () => {
+    setShowFirstHabitPrompt(false);
+    await markFirstHabitPromptShown();
+    setEditingHabit(null);
+    setIsModalOpen(true);
+  };
 
   const handleAddHabit = () => { setEditingHabit(null); setIsModalOpen(true); };
 
@@ -320,10 +332,10 @@ function AuthenticatedApp({ token, user, onLogout }) {
           />
         );
       case 'analytics': return <AnalyticsView habits={habits} completions={completions} />;
-      case 'calendar':  return <HeatmapView habits={habits} completions={completions} />;
-      case 'ai-coach':  return <AiCoachView onAddHabit={addHabit} categories={categories} />;
-      case 'settings':  return <SettingsView />;
-      default:          return null;
+      case 'calendar': return <HeatmapView habits={habits} completions={completions} />;
+      case 'ai-coach': return <AiCoachView onAddHabit={addHabit} categories={categories} />;
+      case 'settings': return <SettingsView />;
+      default: return null;
     }
   };
 
@@ -393,6 +405,12 @@ function AuthenticatedApp({ token, user, onLogout }) {
         message="Are you sure you want to delete this habit? All completion data will be lost."
         onConfirm={confirmDeleteHabit}
         onCancel={() => setHabitToDelete(null)}
+      />
+
+      <FirstHabitPrompt
+        isOpen={showFirstHabitPrompt}
+        onAddHabit={handleFirstHabitAdd}
+        onLater={handleDismissFirstHabitPrompt}
       />
     </div>
   );
