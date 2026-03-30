@@ -1,12 +1,17 @@
 /**
  * Main Application Styles
- * 
+ *
  * Uses theme CSS variables for consistent theming.
  * Legacy variable names are mapped to new theme variables in theme.css.
+ *
+ * Breakpoints (mobile-first):
+ *   mobile  : ≤ 640px
+ *   tablet  : 641px – 900px
+ *   desktop : ≥ 901px  (base styles)
  */
 
+/* ── CSS custom properties ─────────────────────────────────────────────────── */
 :root {
-  /* Legacy variable mappings - these map to theme variables */
   --bg: var(--theme-background);
   --bg2: var(--theme-backgroundSecondary);
   --bg3: var(--theme-backgroundTertiary);
@@ -22,15 +27,20 @@
   --amber: var(--theme-warning);
   --red: var(--theme-error);
   --teal: var(--theme-info);
-  
-  /* Design tokens */
+
   --radius: 12px;
   --radius-sm: 8px;
   --mono: "DM Mono", monospace;
   --sans: "Syne", sans-serif;
+
+  /* sidebar width token — used in both sidebar and main margin */
+  --sidebar-w: 260px;
 }
 
-* {
+/* ── Reset ─────────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -41,16 +51,18 @@ body {
   color: var(--text);
   font-family: var(--sans);
   min-height: 100vh;
+  /* prevent horizontal scroll caused by the sidebar drawer */
+  overflow-x: hidden;
 }
 
-/* Layout */
+/* ── App shell ─────────────────────────────────────────────────────────────── */
 .app {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: var(--sidebar-w) 1fr;
   min-height: 100vh;
 }
 
-/* Sidebar */
+/* ── Sidebar ───────────────────────────────────────────────────────────────── */
 .sidebar {
   background: var(--bg2);
   border-right: 1px solid var(--border);
@@ -61,6 +73,10 @@ body {
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  /* smooth slide transition used on mobile */
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  z-index: 200;
 }
 
 .sidebar-logo {
@@ -85,6 +101,31 @@ body {
   margin-top: 2px;
 }
 
+/* Close button — only visible on mobile (shown via media query below) */
+.sidebar-close-btn {
+  display: none;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--bg3);
+  border-radius: 50%;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: background 0.15s;
+  z-index: 201;
+}
+
+.sidebar-close-btn:hover {
+  background: var(--bg4);
+}
+
 .sidebar-section-label {
   font-size: 10px;
   font-family: var(--mono);
@@ -101,7 +142,7 @@ body {
 }
 
 .nav-item {
-  padding: 9px 12px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 14px;
@@ -109,7 +150,9 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: all 0.15s;
+  transition: background 0.15s, color 0.15s;
+  /* min touch target */
+  min-height: 44px;
 }
 
 .nav-item:hover {
@@ -128,9 +171,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-/* Habits list in sidebar */
 .habit-sidebar-list {
   flex: 1;
   overflow-y: auto;
@@ -146,14 +189,11 @@ body {
   cursor: pointer;
   transition: background 0.15s;
   font-size: 13px;
+  min-height: 40px;
 }
 
 .habit-sidebar-item:hover {
   background: var(--bg3);
-}
-
-.habit-sidebar-item.active {
-  background: var(--bg4);
 }
 
 .habit-dot {
@@ -179,7 +219,7 @@ body {
 
 .sidebar-btn {
   margin: 12px;
-  padding: 10px 16px;
+  padding: 11px 16px;
   border-radius: var(--radius-sm);
   background: rgba(124, 106, 247, 0.12);
   border: 1px solid rgba(124, 106, 247, 0.25);
@@ -188,21 +228,39 @@ body {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s;
   width: calc(100% - 24px);
+  min-height: 44px;
 }
 
 .sidebar-btn:hover {
   background: rgba(124, 106, 247, 0.22);
 }
 
-/* Main content */
+/* ── Sidebar overlay (mobile backdrop) ─────────────────────────────────────── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 199;
+  /* fade in */
+  animation: overlayFadeIn 0.22s ease forwards;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Main content ──────────────────────────────────────────────────────────── */
 .main {
   overflow-y: auto;
+  min-width: 0; /* prevent grid blowout */
 }
 
 .main-header {
-  padding: 28px 32px 20px;
+  padding: 24px 32px 20px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -211,6 +269,28 @@ body {
   top: 0;
   background: var(--bg);
   z-index: 10;
+  gap: 12px;
+}
+
+/* Hamburger — hidden on desktop, shown on mobile */
+.hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: var(--bg3);
+  color: var(--text2);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.hamburger:hover {
+  background: var(--bg4);
+  color: var(--text);
 }
 
 .main-title {
@@ -222,11 +302,25 @@ body {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--text3);
+  /* hide on very small screens to save space */
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.header-title-block {
+  min-width: 0;
 }
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .btn-sm {
@@ -238,7 +332,9 @@ body {
   font-family: var(--sans);
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s, color 0.15s;
+  min-height: 36px;
+  white-space: nowrap;
 }
 
 .btn-sm:hover {
@@ -256,18 +352,20 @@ body {
   font-size: 12px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.15s;
+  transition: background 0.15s;
+  min-height: 36px;
 }
 
 .btn-primary:hover {
   background: rgba(124, 106, 247, 0.25);
 }
 
+/* ── Content area ──────────────────────────────────────────────────────────── */
 .content-area {
   padding: 28px 32px;
 }
 
-/* Stats row */
+/* ── Stats row ─────────────────────────────────────────────────────────────── */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -304,7 +402,7 @@ body {
   font-family: var(--mono);
 }
 
-/* Today's habits */
+/* ── Section header ────────────────────────────────────────────────────────── */
 .section-header {
   display: flex;
   align-items: center;
@@ -321,6 +419,7 @@ body {
   font-family: var(--mono);
 }
 
+/* ── Habit grid ────────────────────────────────────────────────────────────── */
 .habits-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -328,13 +427,14 @@ body {
   margin-bottom: 32px;
 }
 
+/* ── Habit card ────────────────────────────────────────────────────────────── */
 .habit-card {
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 18px 20px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
   position: relative;
   overflow: hidden;
 }
@@ -342,6 +442,10 @@ body {
 .habit-card:hover {
   border-color: var(--border2);
   background: var(--bg3);
+}
+
+.habit-card:active {
+  transform: scale(0.985);
 }
 
 .habit-card.done {
@@ -370,15 +474,17 @@ body {
 }
 
 .habit-check {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 1.5px solid var(--border2);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: all 0.2s;
+  transition: background 0.2s, border-color 0.2s;
+  /* larger touch target */
+  touch-action: manipulation;
 }
 
 .habit-check.checked {
@@ -403,7 +509,8 @@ body {
 .habit-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .habit-streak-badge {
@@ -433,7 +540,7 @@ body {
   color: var(--accent2);
 }
 
-/* Mini heatmap on each card */
+/* Mini heatmap */
 .habit-heatmap {
   display: flex;
   gap: 2px;
@@ -456,7 +563,7 @@ body {
   opacity: 1;
 }
 
-/* Analytics section */
+/* ── Analytics ─────────────────────────────────────────────────────────────── */
 .analytics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -469,26 +576,13 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
+  /* hide scrollbar cosmetically */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-/* Hide scrollbar in chart-card while keeping scroll functionality */
 .chart-card::-webkit-scrollbar {
   display: none;
-}
-
-.chart-card {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-}
-
-/* Hide scrollbar in heatmap scroll containers */
-.heatmap-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.heatmap-scroll {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
 }
 
 .chart-title {
@@ -510,13 +604,23 @@ body {
   height: 180px;
 }
 
-/* Weekly heatmap calendar */
+/* ── Heatmap calendar ──────────────────────────────────────────────────────── */
 .heatmap-calendar {
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
   margin-bottom: 28px;
+}
+
+.heatmap-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.heatmap-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .heatmap-months {
@@ -572,39 +676,23 @@ body {
   transition: opacity 0.15s;
 }
 
-.heatmap-sq:hover {
-  opacity: 0.8;
-}
+.heatmap-sq:hover { opacity: 0.8; }
+.heatmap-sq.l1 { background: rgba(124, 106, 247, 0.25); }
+.heatmap-sq.l2 { background: rgba(124, 106, 247, 0.45); }
+.heatmap-sq.l3 { background: rgba(124, 106, 247, 0.65); }
+.heatmap-sq.l4 { background: rgba(124, 106, 247, 0.85); }
+.heatmap-sq.l5 { background: var(--accent2); }
 
-.heatmap-sq.l1 {
-  background: rgba(124, 106, 247, 0.25);
-}
-
-.heatmap-sq.l2 {
-  background: rgba(124, 106, 247, 0.45);
-}
-
-.heatmap-sq.l3 {
-  background: rgba(124, 106, 247, 0.65);
-}
-
-.heatmap-sq.l4 {
-  background: rgba(124, 106, 247, 0.85);
-}
-
-.heatmap-sq.l5 {
-  background: var(--accent2);
-}
-
-/* Modal */
+/* ── Modal ─────────────────────────────────────────────────────────────────── */
 .modal-overlay {
   display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
-  z-index: 100;
+  z-index: 300;
   align-items: center;
   justify-content: center;
+  padding: 16px;
 }
 
 .modal-overlay.open {
@@ -616,8 +704,20 @@ body {
   border: 1px solid var(--border2);
   border-radius: 16px;
   padding: 28px;
-  width: 420px;
-  max-width: 90vw;
+  width: 100%;
+  max-width: 420px;
+  /* constrain height on small screens */
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  scrollbar-width: none;
+  animation: modalSlideUp 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal::-webkit-scrollbar { display: none; }
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .modal-title {
@@ -642,13 +742,13 @@ body {
 
 .form-input {
   width: 100%;
-  padding: 9px 12px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
   background: var(--bg3);
   border: 1px solid var(--border2);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: 16px; /* 16px prevents iOS zoom on focus */
   outline: none;
 }
 
@@ -663,18 +763,19 @@ body {
 }
 
 .emoji-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--bg3);
   color: white;
   cursor: pointer;
   font-size: 18px;
-  transition: all 0.15s;
+  transition: border-color 0.15s, background 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: manipulation;
 }
 
 .emoji-btn:hover {
@@ -689,21 +790,23 @@ body {
 
 .color-picker {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .color-swatch {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: all 0.15s;
+  transition: transform 0.15s, border-color 0.15s;
+  touch-action: manipulation;
 }
 
 .color-swatch.selected {
   border-color: white;
-  transform: scale(1.1);
+  transform: scale(1.15);
 }
 
 .modal-actions {
@@ -714,7 +817,7 @@ body {
 
 .btn-cancel {
   flex: 1;
-  padding: 10px;
+  padding: 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border2);
   background: transparent;
@@ -722,11 +825,12 @@ body {
   font-family: var(--sans);
   font-size: 14px;
   cursor: pointer;
+  min-height: 44px;
 }
 
 .btn-save {
   flex: 1;
-  padding: 10px;
+  padding: 12px;
   border-radius: var(--radius-sm);
   border: none;
   background: var(--accent);
@@ -735,13 +839,15 @@ body {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  min-height: 44px;
+  transition: background 0.15s;
 }
 
 .btn-save:hover {
   background: var(--accent2);
 }
 
-/* Tooltip */
+/* ── Tooltip ───────────────────────────────────────────────────────────────── */
 .tooltip {
   position: fixed;
   background: var(--bg4);
@@ -752,34 +858,22 @@ body {
   font-family: var(--mono);
   color: var(--text);
   pointer-events: none;
-  z-index: 200;
+  z-index: 400;
   display: none;
 }
 
-/* Empty state */
+/* ── Empty state ───────────────────────────────────────────────────────────── */
 .empty-state {
   text-align: center;
   padding: 60px 20px;
   color: var(--text3);
 }
 
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
+.empty-icon { font-size: 48px; margin-bottom: 16px; }
+.empty-text { font-size: 15px; margin-bottom: 8px; color: var(--text2); }
+.empty-sub  { font-size: 13px; font-family: var(--mono); }
 
-.empty-text {
-  font-size: 15px;
-  margin-bottom: 8px;
-  color: var(--text2);
-}
-
-.empty-sub {
-  font-size: 13px;
-  font-family: var(--mono);
-}
-
-/* Category filter */
+/* ── Category filter ───────────────────────────────────────────────────────── */
 .category-filter {
   display: flex;
   gap: 8px;
@@ -788,7 +882,7 @@ body {
 }
 
 .category-btn {
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border2);
   background: var(--bg3);
@@ -796,9 +890,11 @@ body {
   font-family: var(--mono);
   font-size: 11px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  min-height: 36px;
+  touch-action: manipulation;
 }
 
 .category-btn:hover {
@@ -812,7 +908,7 @@ body {
   color: var(--accent2);
 }
 
-/* Daily goal & reminder */
+/* ── Goal & reminder row ───────────────────────────────────────────────────── */
 .goal-reminder-row {
   display: flex;
   gap: 16px;
@@ -850,20 +946,18 @@ body {
   color: var(--text3);
 }
 
-.goal-message.success {
-  color: var(--green);
-}
+.goal-message.success { color: var(--green); }
 
 .goal-input,
 .reminder-input {
   width: 100%;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border-radius: var(--radius-sm);
   background: var(--bg3);
   border: 1px solid var(--border2);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: 16px; /* prevent iOS zoom */
   outline: none;
 }
 
@@ -872,7 +966,22 @@ body {
   border-color: var(--accent);
 }
 
-/* Tab nav */
+/* ── Progress bar ──────────────────────────────────────────────────────────── */
+.progress-bar-wrap {
+  background: var(--bg4);
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s;
+}
+
+/* ── Misc ──────────────────────────────────────────────────────────────────── */
 .tab-nav {
   display: flex;
   gap: 2px;
@@ -890,102 +999,140 @@ body {
   font-size: 13px;
   cursor: pointer;
   color: var(--text3);
-  transition: all 0.15s;
+  transition: background 0.15s, color 0.15s;
+  min-height: 36px;
 }
 
-.tab.active {
-  background: var(--bg2);
-  color: var(--text);
-}
+.tab.active { background: var(--bg2); color: var(--text); }
 
-/* Progress bar */
-.progress-bar-wrap {
-  background: var(--bg4);
-  border-radius: 4px;
-  height: 6px;
-  overflow: hidden;
-  margin-top: 8px;
-}
+.settings-page { max-width: 800px; }
+.settings-section { margin-bottom: 32px; }
+.settings-section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--text); }
 
-.progress-bar-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.4s;
-}
-
-/* View pages */
-.view {
-  display: none;
-}
-
-.view.active {
-  display: block;
-}
-
-/* Habit detail */
-.detail-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 24px;
-}
-
-.detail-emoji-big {
-  font-size: 36px;
-}
-
-.detail-name {
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.detail-meta {
-  font-size: 12px;
-  color: var(--text3);
-  font-family: var(--mono);
-}
-
-.detail-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-/* Settings page */
-.settings-page {
-  max-width: 800px;
-}
-
-.settings-section {
-  margin-bottom: 32px;
-}
-
-.settings-section-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: var(--text);
-}
-
+/* ── Tablet: 641px – 900px ─────────────────────────────────────────────────── */
 @media (max-width: 900px) {
+  .stats-row        { grid-template-columns: repeat(2, 1fr); }
+  .analytics-grid   { grid-template-columns: 1fr; }
+}
+
+/* ── Mobile: ≤ 640px ───────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* App shell — single column, sidebar is a drawer */
   .app {
     grid-template-columns: 1fr;
   }
 
+  /* ── Sidebar drawer ── */
   .sidebar {
-    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(var(--sidebar-w), 80vw);
+    height: 100dvh;
+    transform: translateX(-100%);
+    /* already has transition from base rule */
   }
 
+  /* slide-in when open */
+  .sidebar.sidebar--open {
+    transform: translateX(0);
+    box-shadow: 4px 0 32px rgba(0, 0, 0, 0.45);
+  }
+
+  /* show overlay when sidebar is open */
+  .sidebar-overlay.sidebar--open {
+    display: block;
+  }
+
+  /* show close button inside sidebar on mobile */
+  .sidebar-close-btn {
+    display: flex;
+  }
+
+  /* show hamburger in header */
+  .hamburger {
+    display: flex;
+  }
+
+  /* ── Header ── */
+  .main-header {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
+  .main-title { font-size: 16px; }
+
+  /* Hide the date subtitle on very small screens to keep header clean */
+  .main-date { display: none; }
+
+  /* ── Content ── */
+  .content-area {
+    padding: 16px;
+  }
+
+  /* ── Stats ── */
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
   }
 
-  .analytics-grid {
+  .stat-card {
+    padding: 14px 16px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  /* ── Goal / reminder ── */
+  .goal-reminder-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ── Habits grid — single column on mobile ── */
+  .habits-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
-  .detail-stats {
-    grid-template-columns: repeat(2, 1fr);
+  /* ── Analytics performance cards ── */
+  .perf-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* ── Modal full-width on mobile ── */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    border-radius: 20px 20px 0 0;
+    max-width: 100%;
+    max-height: 90dvh;
+    padding: 24px 20px 32px;
+    animation: modalSlideUpMobile 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes modalSlideUpMobile {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  /* ── Misc ── */
+  .empty-state {
+    padding: 40px 16px;
+  }
+
+  /* Ensure all interactive elements meet 44px touch target */
+  .btn-sm,
+  .btn-primary,
+  .category-btn,
+  .sidebar-btn,
+  .btn-cancel,
+  .btn-save {
+    min-height: 44px;
   }
 }

@@ -35,8 +35,8 @@ function ProfileMenu({ user, onSettings, onLogout }) {
         onClick={() => setOpen((v) => !v)}
         title={user?.name ?? 'Profile'}
         style={{
-          width: '32px',
-          height: '32px',
+          width: '36px',
+          height: '36px',
           borderRadius: '50%',
           background: 'rgba(124,106,247,0.18)',
           border: '1.5px solid rgba(124,106,247,0.35)',
@@ -124,11 +124,21 @@ const menuItemStyle = {
   transition: 'background 0.12s',
 };
 
-// ── Root: route between callback, auth, and main app ─────────────────────────
+// ── Hamburger icon SVG ────────────────────────────────────────────────────────
+function HamburgerIcon() {
+  return (
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <line x1="3" y1="6"  x2="21" y2="6"  strokeLinecap="round"/>
+      <line x1="3" y1="12" x2="21" y2="12" strokeLinecap="round"/>
+      <line x1="3" y1="18" x2="21" y2="18" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+// ── Root ──────────────────────────────────────────────────────────────────────
 function App() {
   const { token, user, error, loading, login, signup, loginWithGoogle, handleGoogleCallback, logout } = useAuth();
 
-  // Simple path-based routing — no react-router needed
   const isCallbackPage = window.location.pathname === '/auth/callback';
 
   if (isCallbackPage) {
@@ -161,20 +171,25 @@ function AuthenticatedApp({ token, user, onLogout }) {
   const [activeView, setActiveView] = useState('today');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar on Escape key
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') setSidebarOpen(false); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Prevent body scroll when sidebar drawer is open on mobile
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   const {
-    habits,
-    completions,
-    dailyGoal,
-    reminderTime,
-    categories,
-    toggleHabit,
-    addHabit,
-    updateHabit,
-    deleteHabit,
-    updateDailyGoal,
-    updateReminderTime,
-    addCategory,
+    habits, completions, dailyGoal, reminderTime, categories,
+    toggleHabit, addHabit, updateHabit, deleteHabit,
+    updateDailyGoal, updateReminderTime, addCategory,
   } = useHabits(token);
 
   const handleAddHabit = () => { setEditingHabit(null); setIsModalOpen(true); };
@@ -245,20 +260,41 @@ function AuthenticatedApp({ token, user, onLogout }) {
 
   return (
     <div className="app">
+      {/* Overlay backdrop — only active on mobile when sidebar is open */}
+      <div
+        className={`sidebar-overlay${sidebarOpen ? ' sidebar--open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden="true"
+      />
+
       <Sidebar
         habits={habits}
         completions={completions}
         activeView={activeView}
         onViewChange={setActiveView}
         onAddHabit={handleAddHabit}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <main className="main">
         <div className="main-header">
-          <div>
-            <div className="main-title">{getViewTitle()}</div>
-            <div className="main-date">{getFormattedDate()}</div>
+          {/* Left side: hamburger (mobile) + title */}
+          <div className="header-left">
+            <button
+              className="hamburger"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+            >
+              <HamburgerIcon />
+            </button>
+            <div className="header-title-block">
+              <div className="main-title">{getViewTitle()}</div>
+              <div className="main-date">{getFormattedDate()}</div>
+            </div>
           </div>
+
+          {/* Right side: actions */}
           <div className="header-actions">
             <button className="btn-sm" onClick={handleAddHabit}>+ New Habit</button>
             <ProfileMenu
