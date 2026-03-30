@@ -3,6 +3,17 @@ import { dateKey, getStreak, getBestStreak, getCompletionRate } from '../utils/d
 import { MONTHS, DAY_LETTERS } from '../constants';
 import { HabitIcon } from './HabitIcon';
 
+// Hide scrollbar while preserving scroll functionality
+const scrollbarHideStyles = `
+  .heatmap-scroll-container::-webkit-scrollbar {
+    display: none;
+  }
+  .heatmap-scroll-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+`;
+
 /**
  * Build a 26-week grid of day cells.
  * Returns { cols, monthLabels } where cols is an array of 7-cell column arrays.
@@ -88,7 +99,7 @@ function HeatmapGrid({ getCellValue, getMax, showTip, hideTip }) {
   ));
 
   return (
-    <div style={{ overflowX: 'auto', overflowY: 'hidden', paddingBottom: '4px' }}>
+    <div className="heatmap-scroll-container" style={{ overflowX: 'auto', overflowY: 'hidden', paddingBottom: '4px' }}>
       <div style={{ minWidth: 'max-content' }}>
         <div
           className="heatmap-months"
@@ -124,6 +135,7 @@ export function HeatmapView({ habits, completions }) {
 
   return (
     <div className="view active">
+      <style>{scrollbarHideStyles}</style>
       {/* Overall */}
       <div className="chart-card" style={{ marginBottom: '20px' }}>
         <div className="chart-title">Overall completion heatmap</div>
