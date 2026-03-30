@@ -1,11 +1,16 @@
-# Streakz — Habit Tracking Web Application
+# Streakz — AI-Powered Habit Tracking Application
 
-
-![React](https://img.shields.io/badge/Frontend-React-blue?logo=react) ![Node.js](https://img.shields.io/badge/Backend-Node.js-green?logo=node.js) ![Express](https://img.shields.io/badge/Framework-Express-black?logo=express) ![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen?logo=mongodb) ![JWT](https://img.shields.io/badge/Auth-JWT-orange) ![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel) ![Render](https://img.shields.io/badge/Backend-Render-purple) 
+![React](https://img.shields.io/badge/Frontend-React-blue?logo=react)
+![Node.js](https://img.shields.io/badge/Backend-Node.js-green?logo=node.js)
+![Express](https://img.shields.io/badge/Framework-Express-black?logo=express)
+![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen?logo=mongodb)
+![JWT](https://img.shields.io/badge/Auth-JWT-orange)
+![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)
+![Render](https://img.shields.io/badge/Backend-Render-purple)
 
 ---
 
-A full-stack habit tracking application designed to help users build consistency, monitor progress, and maintain daily streaks.
+Streakz is a full-stack habit tracking web application designed to help users build consistency, maintain streaks, and improve productivity. It integrates AI-powered features to provide personalized habit recommendations and actionable insights.
 
 ---
 
@@ -18,14 +23,31 @@ A full-stack habit tracking application designed to help users build consistency
 
 ## Features
 
-* User authentication with JWT (signup/login)
-* Create and manage daily habits
-* Track streaks and consistency over time
-* Basic analytics for habit activity
-* Custom habit categories
-* User-specific settings
+### Core Functionality
+
+* Secure authentication using JWT (email/password)
+* Google OAuth login integration
+* Create, update, and manage daily habits
+* Automatic streak tracking and consistency monitoring
+* Custom habit categories and user preferences
 * Light/Dark theme support
-* Fully deployed (Vercel, Render, MongoDB Atlas)
+
+### AI Features
+
+* AI Habit Coach: Generate structured habit plans based on user goals
+* Personalized suggestions with actionable steps and tips
+* Convert AI-generated habits directly into trackable habits
+
+### User Experience
+
+* Fully mobile responsive design
+* Loading states and error handling for better UX
+
+### Deployment
+
+* Frontend hosted on Vercel
+* Backend hosted on Render
+* Database hosted on MongoDB Atlas
 
 ---
 
@@ -34,13 +56,14 @@ A full-stack habit tracking application designed to help users build consistency
 ### Frontend
 
 * React (Vite)
-* CSS (custom styling with theme support)
+* Custom CSS (responsive design)
 
 ### Backend
 
 * Node.js
 * Express.js
 * JWT Authentication
+* Groq API (LLM integration)
 
 ### Database
 
@@ -62,21 +85,34 @@ Streakz/
 
 ## Authentication Flow
 
-* Users sign up or log in
-* Server generates a JWT token
-* Token is stored on the client
-* Authenticated requests include the token
-* Protected routes are handled via middleware
+* User signs up or logs in (JWT or Google OAuth)
+* Server generates authentication token
+* Token is stored client-side
+* Protected routes validated via middleware
+
+---
+
+## AI Habit Coach (Overview)
+
+* Users input a goal (e.g., "Improve focus")
+* Backend calls Groq API (LLM)
+* Returns structured response:
+
+  * Goal summary
+  * 3 actionable habits
+  * 1 practical tip
+* Users can directly add suggested habits to their tracker
 
 ---
 
 ## Key Concepts Implemented
 
 * RESTful API design
-* Authentication and route protection
-* Client-server integration
-* State management using React hooks
+* Authentication and authorization (JWT + OAuth)
+* AI integration using LLM APIs
+* Client-server communication
 * Modular backend architecture
+* Responsive UI/UX design
 * Full-stack deployment workflow
 
 ---
@@ -104,6 +140,7 @@ Create a `.env` file:
 ```env
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_secret_key
+GROQ_API_KEY=your_groq_api_key
 ```
 
 Run the server:
@@ -137,24 +174,26 @@ npm run dev
 
 ## Deployment
 
-* Frontend deployed on Vercel
-* Backend deployed on Render
-* Database hosted on MongoDB Atlas
+* Frontend → Vercel
+* Backend → Render
+* Database → MongoDB Atlas
 
 ---
 
 ## Future Improvements
 
-* OAuth authentication (Google login)
-* Push notifications
-* Improved mobile responsiveness
-* AI-based habit recommendations
+* Push notifications for habit reminders
+* Advanced analytics and visualizations
+* Habit completion predictions using AI
 * User profile enhancements
 
 ---
 
 ## Author
 
-**Vasu**        
-Full-Stack & AI Engineer 
+**Vasu (Cap)**
+Full-Stack & AI Engineer
 
+---
+
+> Building consistency through small daily actions.
