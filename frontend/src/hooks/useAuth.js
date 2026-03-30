@@ -3,7 +3,6 @@ import { useState, useCallback } from 'react';
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
 const TOKEN_KEY = 'streaks_token';
 
-// ── Token helpers (module-level so useHabits can import getToken) ─────────────
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -16,21 +15,18 @@ function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-/**
- * Auth hook — email/password signup+login, Google OAuth, and logout.
- * Token is persisted in localStorage.
- */
 export function useAuth() {
   const [token, setTokenState] = useState(() => getToken());
   const [user, setUser] = useState(null);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Called after any successful auth response (email/password or Google)
   const handleAuthResponse = useCallback(({ token: t, user: u }) => {
     setToken(t);
     setTokenState(t);
     setUser(u);
+    setIsFirstLogin(u?.isFirstLogin ?? false);
     setError(null);
   }, []);
 
@@ -76,51 +72,87 @@ export function useAuth() {
   }, [handleAuthResponse]);
 
   // ── Google OAuth ────────────────────────────────────────────────────────────
-  /** Redirect the browser to the backend Google auth route */
   const loginWithGoogle = useCallback(() => {
     window.location.href = `${API_BASE}/api/auth/google`;
   }, []);
 
-  /**
-   * Called by AuthCallbackPage after Google redirects back to /auth/callback.
-   * Reads ?token= or ?error= from the URL, then updates auth state.
-   */
   const handleGoogleCallback = useCallback((searchParams) => {
     const token = searchParams.get('token');
     const err = searchParams.get('error');
+    const firstLogin = searchParams.get('isFirstLogin') === 'true';
 
     if (err) {
       setError(decodeURIComponent(err));
-      return false; // signal failure to the caller
+      return { ok: false };
     }
 
     if (token) {
       setToken(token);
       setTokenState(token);
+      setIsFirstLogin(firstLogin);
       setError(null);
-      return true; // signal success
+      return { ok: true, isFirstLogin: firstLogin };
     }
 
     setError('No token received from Google');
-    return false;
+    return { ok: false };
   }, []);
+
+  // ── Profile updates ─────────────────────────────────────────────────────────
+  /**
+   * Update user name (and optionally isFirstLogin flag).
+   * Used by WelcomePage to save the chosen name.
+   */
+  const updateProfile = useCallback(async ({ name, isFirstLogin: ifl } = {}) => {
+    const tk = getToken();
+    const body = {};
+    if (name !== undefined) body.name = name;
+    if (ifl !== undefined) body.isFirstLogin = ifl;
+
+    const res = await fetch(`${API_BASE}/api/auth/profile`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(tk ? { Authorization: `Bearer ${tk}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update profile');
+
+    setUser((prev) => ({ ...prev, ...data }));
+    if (data.isFirstLogin !== undefined) setIsFirstLogin(data.isFirstLogin);
+    return data;
+  }, []);
+
+  /**
+   * Mark onboarding complete — sets isFirstLogin = false on backend.
+   */
+  const completeOnboarding = useCallback(async () => {
+    await updateProfile({ isFirstLogin: false });
+    setIsFirstLogin(false);
+  }, [updateProfile]);
 
   // ── Logout ──────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
     clearToken();
     setTokenState(null);
     setUser(null);
+    setIsFirstLogin(false);
   }, []);
 
   return {
     token,
     user,
+    isFirstLogin,
     error,
     loading,
     signup,
     login,
     loginWithGoogle,
     handleGoogleCallback,
+    updateProfile,
+    completeOnboarding,
     logout,
   };
 }

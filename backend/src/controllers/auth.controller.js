@@ -52,13 +52,55 @@ export async function login(req, res) {
 }
 
 export async function me(req, res) {
-  // req.user is set by authenticate middleware
   const user = await User.findById(req.user.id).lean();
   if (!user) throw new AppError('User not found', 404);
   res.json({
     id: user._id.toString(),
     name: user.name,
     email: user.email,
+    isFirstLogin: user.isFirstLogin,
+    createdAt: user.createdAt,
+  });
+}
+
+/**
+ * PATCH /api/auth/profile
+ * Body can contain:
+ *   name          — update display name
+ *   isFirstLogin  — set to false to mark onboarding complete
+ */
+export async function updateProfile(req, res) {
+  const { name, isFirstLogin } = req.body || {};
+  const updates = {};
+
+  if (name !== undefined) {
+    if (typeof name !== 'string' || !name.trim()) {
+      throw new AppError('name must be a non-empty string', 400);
+    }
+    updates.name = name.trim();
+  }
+
+  if (isFirstLogin !== undefined) {
+    updates.isFirstLogin = Boolean(isFirstLogin);
+  }
+
+  if (Object.keys(updates).length === 0) {
+    throw new AppError('No valid fields to update', 400);
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { $set: updates },
+    { new: true, runValidators: true }
+  );
+
+  if (!user) throw new AppError('User not found', 404);
+
+  res.json({
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    isFirstLogin: user.isFirstLogin,
     createdAt: user.createdAt,
   });
 }

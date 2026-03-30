@@ -1,25 +1,24 @@
 import React, { useEffect } from 'react';
 
 /**
- * This page lives at /auth/callback.
- * Google redirects here with ?token=JWT  (success)
- *                          or ?error=msg  (failure).
+ * Lives at /auth/callback.
+ * Google redirects here with ?token=JWT&isFirstLogin=true/false (success)
+ *                          or ?error=msg (failure).
  *
  * Props:
- *   handleGoogleCallback(searchParams) — from useAuth
- *   onSuccess()                        — called when token is stored
- *   onFailure()                        — called when there's an error
+ *   handleGoogleCallback(searchParams) — from useAuth, returns { ok, isFirstLogin }
+ *   onSuccess(result)                  — called with the result object on success
+ *   onFailure()                        — called on error
  */
 export function AuthCallbackPage({ handleGoogleCallback, onSuccess, onFailure }) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const ok = handleGoogleCallback(params);
+    const result = handleGoogleCallback(params);
 
-    // Clean the token/error out of the URL regardless of outcome
     window.history.replaceState({}, '', '/auth/callback');
 
-    if (ok) {
-      onSuccess();
+    if (result?.ok) {
+      onSuccess(result);
     } else {
       onFailure();
     }

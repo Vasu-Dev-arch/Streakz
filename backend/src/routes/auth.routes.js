@@ -10,12 +10,10 @@ const router = Router();
 router.post('/signup', asyncHandler(auth.signup));
 router.post('/login', asyncHandler(auth.login));
 router.get('/me', authenticate, asyncHandler(auth.me));
+router.patch('/profile', authenticate, asyncHandler(auth.updateProfile));
 
 // ── Google OAuth ──────────────────────────────────────────────────────────────
-// Step 1: redirect browser to Google consent screen
 router.get('/google', redirectToGoogle);
-
-// Step 2: Google redirects back here with ?code=...
 router.get('/google/callback', asyncHandler(handleGoogleCallback));
 
 export default router;

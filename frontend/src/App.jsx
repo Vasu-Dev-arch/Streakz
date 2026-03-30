@@ -9,6 +9,8 @@ import { HabitModal } from './components/HabitModal';
 import { ConfirmModal } from './components/ConfirmModal';
 import { AuthPage } from './components/AuthPage';
 import { AuthCallbackPage } from './components/AuthCallbackPage';
+import { WelcomePage } from './components/WelcomePage';
+import { OnboardingPage } from './components/OnboardingPage';
 import { useAuth } from './hooks/useAuth';
 import { useHabits } from './hooks/useHabits';
 import { useTheme } from './themes/ThemeContext';
@@ -74,12 +76,9 @@ function ProfileMenu({ user, onSettings, onLogout }) {
           )}
 
           <div style={{ position: 'relative' }}>
-            <button 
-              onClick={() => setThemeMenuOpen(!themeMenuOpen)} 
-              style={{
-                ...menuItemStyle,
-                ...(themeMenuOpen ? { background: 'var(--bg3)', color: 'var(--text)' } : {}),
-              }}
+            <button
+              onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+              style={{ ...menuItemStyle, ...(themeMenuOpen ? { background: 'var(--bg3)', color: 'var(--text)' } : {}) }}
               onMouseEnter={() => setThemeMenuOpen(true)}
               onMouseLeave={() => setThemeMenuOpen(false)}
             >
@@ -92,106 +91,30 @@ function ProfileMenu({ user, onSettings, onLogout }) {
               </svg>
             </button>
             {themeMenuOpen && (
-              <div 
-                style={{
-                  position: 'absolute',
-                  right: '100%',
-                  top: 0,
-                  minWidth: '140px',
-                  background: 'var(--bg2)',
-                  border: '1px solid var(--border2)',
-                  borderRadius: '10px',
-                  padding: '6px',
-                  zIndex: 51,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
-                }}
+              <div
+                style={{ position: 'absolute', right: '100%', top: 0, minWidth: '140px', background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: '10px', padding: '6px', zIndex: 51, boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }}
                 onMouseEnter={() => setThemeMenuOpen(true)}
                 onMouseLeave={() => setThemeMenuOpen(false)}
               >
-                <button 
-                  onClick={() => { 
-                    localStorage.removeItem('habit-tracker-theme-id');
-                    setTheme(getSystemPreference());
-                    setOpen(false); 
-                    setThemeMenuOpen(false); 
-                  }} 
-                  style={{
-                    ...menuItemStyle,
-                    ...(!localStorage.getItem('habit-tracker-theme-id') ? { background: 'var(--bg3)', color: 'var(--text)' } : {}),
-                  }}
-                  onMouseEnter={(e) => {
-                    if (localStorage.getItem('habit-tracker-theme-id')) {
-                      e.currentTarget.style.background = 'var(--bg3)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (localStorage.getItem('habit-tracker-theme-id')) {
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
-                >
-                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                    <line x1="8" y1="21" x2="16" y2="21"/>
-                    <line x1="12" y1="17" x2="12" y2="21"/>
-                  </svg>
-                  System
-                  {!localStorage.getItem('habit-tracker-theme-id') && <span style={{ marginLeft: 'auto' }}>✓</span>}
-                </button>
-                <button 
-                  onClick={() => { setTheme('dark'); setOpen(false); setThemeMenuOpen(false); }} 
-                  style={{
-                    ...menuItemStyle,
-                    ...(currentThemeId === 'dark' ? { background: 'var(--bg3)', color: 'var(--text)' } : {}),
-                  }}
-                  onMouseEnter={(e) => {
-                    if (currentThemeId !== 'dark') {
-                      e.currentTarget.style.background = 'var(--bg3)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (currentThemeId !== 'dark') {
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
-                >
-                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                  </svg>
-                  Dark
-                  {currentThemeId === 'dark' && <span style={{ marginLeft: 'auto' }}>✓</span>}
-                </button>
-                <button 
-                  onClick={() => { setTheme('light'); setOpen(false); setThemeMenuOpen(false); }} 
-                  style={{
-                    ...menuItemStyle,
-                    ...(currentThemeId === 'light' ? { background: 'var(--bg3)', color: 'var(--text)' } : {}),
-                  }}
-                  onMouseEnter={(e) => {
-                    if (currentThemeId !== 'light') {
-                      e.currentTarget.style.background = 'var(--bg3)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (currentThemeId !== 'light') {
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
-                >
-                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
-                    <circle cx="12" cy="12" r="5"/>
-                    <line x1="12" y1="1" x2="12" y2="3"/>
-                    <line x1="12" y1="21" x2="12" y2="23"/>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                    <line x1="1" y1="12" x2="3" y2="12"/>
-                    <line x1="21" y1="12" x2="23" y2="12"/>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                  </svg>
-                  Light
-                  {currentThemeId === 'light' && <span style={{ marginLeft: 'auto' }}>✓</span>}
-                </button>
+                {[
+                  { id: null, label: 'System', icon: <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>, check: !localStorage.getItem('habit-tracker-theme-id') },
+                  { id: 'dark', label: 'Dark', icon: <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>, check: currentThemeId === 'dark' },
+                  { id: 'light', label: 'Light', icon: <><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></>, check: currentThemeId === 'light' },
+                ].map((t) => (
+                  <button
+                    key={t.label}
+                    onClick={() => {
+                      if (t.id === null) { localStorage.removeItem('habit-tracker-theme-id'); setTheme(getSystemPreference()); }
+                      else setTheme(t.id);
+                      setOpen(false); setThemeMenuOpen(false);
+                    }}
+                    style={{ ...menuItemStyle, ...(t.check ? { background: 'var(--bg3)', color: 'var(--text)' } : {}) }}
+                  >
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>{t.icon}</svg>
+                    {t.label}
+                    {t.check && <span style={{ marginLeft: 'auto' }}>✓</span>}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -235,27 +158,48 @@ function HamburgerIcon() {
   );
 }
 
-// ── Root ──────────────────────────────────────────────────────────────────────
+// ── Root router ───────────────────────────────────────────────────────────────
 function App() {
-  const { token, user, error, loading, login, signup, loginWithGoogle, handleGoogleCallback, logout } = useAuth();
+  const {
+    token, user, isFirstLogin, error, loading,
+    login, signup, loginWithGoogle, handleGoogleCallback,
+    updateProfile, completeOnboarding, logout,
+  } = useAuth();
 
-  const isCallbackPage = window.location.pathname === '/auth/callback';
+  const path = window.location.pathname;
 
-  if (isCallbackPage) {
+  // ── /auth/callback — handles both email/password (no-op) and Google OAuth
+  if (path === '/auth/callback') {
     return (
       <AuthCallbackPage
         handleGoogleCallback={handleGoogleCallback}
-        onSuccess={() => window.location.replace('/')}
+        onSuccess={(result) => {
+          // result.isFirstLogin comes from Google OAuth redirect
+          if (result?.isFirstLogin) {
+            window.location.replace('/welcome');
+          } else {
+            window.location.replace('/');
+          }
+        }}
         onFailure={() => window.location.replace('/auth/callback?error=true')}
       />
     );
   }
 
+  // Not logged in → auth page
   if (!token) {
     return (
       <AuthPage
-        onLogin={login}
-        onSignup={signup}
+        onLogin={async (creds) => {
+          await login(creds);
+          // login sets isFirstLogin from the user object returned by the API.
+          // We can't read the updated state here synchronously, so we rely on
+          // the re-render: App will re-evaluate and route correctly.
+        }}
+        onSignup={async (creds) => {
+          await signup(creds);
+          // New signup always triggers first-login flow — handled after re-render.
+        }}
         onGoogleLogin={loginWithGoogle}
         error={error}
         loading={loading}
@@ -263,10 +207,39 @@ function App() {
     );
   }
 
+  // ── Logged in — check onboarding state ────────────────────────────────────
+
+  // /welcome — collect username for first-timers
+  if (path === '/welcome' || (isFirstLogin && path !== '/onboarding')) {
+    return (
+      <WelcomePage
+        initialName={user?.name || ''}
+        onContinue={async (name) => {
+          // Save name but keep isFirstLogin=true until onboarding completes
+          await updateProfile({ name });
+          window.location.replace('/onboarding');
+        }}
+      />
+    );
+  }
+
+  // /onboarding — feature showcase
+  if (path === '/onboarding') {
+    return (
+      <OnboardingPage
+        onFinish={async () => {
+          await completeOnboarding(); // sets isFirstLogin = false
+          window.location.replace('/');
+        }}
+      />
+    );
+  }
+
+  // Dashboard
   return <AuthenticatedApp token={token} user={user} onLogout={logout} />;
 }
 
-// ── Authenticated shell ───────────────────────────────────────────────────────
+// ── Authenticated app shell ───────────────────────────────────────────────────
 function AuthenticatedApp({ token, user, onLogout }) {
   const [activeView, setActiveView] = useState('today');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -298,8 +271,6 @@ function AuthenticatedApp({ token, user, onLogout }) {
     if (habit) { setEditingHabit(habit); setIsModalOpen(true); }
   };
 
-  const handleDeleteHabit = (id) => { setHabitToDelete(id); };
-
   const confirmDeleteHabit = () => {
     if (habitToDelete) { deleteHabit(habitToDelete); setHabitToDelete(null); }
   };
@@ -321,14 +292,8 @@ function AuthenticatedApp({ token, user, onLogout }) {
   };
 
   const getViewTitle = () => {
-    switch (activeView) {
-      case 'today':     return 'Today';
-      case 'analytics': return 'Analytics';
-      case 'calendar':  return 'Heatmap';
-      case 'ai-coach':  return 'AI Coach';
-      case 'settings':  return 'Settings';
-      default:          return 'Today';
-    }
+    const titles = { today: 'Today', analytics: 'Analytics', calendar: 'Heatmap', 'ai-coach': 'AI Coach', settings: 'Settings' };
+    return titles[activeView] ?? 'Today';
   };
 
   const getFormattedDate = () => {
@@ -348,7 +313,7 @@ function AuthenticatedApp({ token, user, onLogout }) {
             categories={categories}
             onToggleHabit={toggleHabit}
             onEditHabit={handleEditHabit}
-            onDeleteHabit={handleDeleteHabit}
+            onDeleteHabit={(id) => setHabitToDelete(id)}
             onGoalChange={updateDailyGoal}
             onReminderChange={updateReminderTime}
             onNavigateToAiCoach={() => setActiveView('ai-coach')}
@@ -356,13 +321,7 @@ function AuthenticatedApp({ token, user, onLogout }) {
         );
       case 'analytics': return <AnalyticsView habits={habits} completions={completions} />;
       case 'calendar':  return <HeatmapView habits={habits} completions={completions} />;
-      case 'ai-coach':
-        return (
-          <AiCoachView
-            onAddHabit={addHabit}
-            categories={categories}
-          />
-        );
+      case 'ai-coach':  return <AiCoachView onAddHabit={addHabit} categories={categories} />;
       case 'settings':  return <SettingsView />;
       default:          return null;
     }
@@ -399,7 +358,6 @@ function AuthenticatedApp({ token, user, onLogout }) {
           </div>
 
           <div className="header-actions">
-            {/* AI Coach shortcut button in header */}
             <button
               className="btn-sm ai-coach-header-btn"
               onClick={() => setActiveView('ai-coach')}
