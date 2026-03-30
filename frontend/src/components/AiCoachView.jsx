@@ -174,11 +174,6 @@ export function AiCoachView({ onAddHabit, categories }) {
               const isAdded = addedIndexes.has(i);
               return (
                 <div key={i} className={`ai-habit-card${isAdded ? ' ai-habit-card--added' : ''}`}>
-                  {/* Added indicator */}
-                  {isAdded && (
-                    <div className="ai-habit-card-added-badge">Added ✓</div>
-                  )}
-
                   <div className="ai-habit-card-top">
                     <span className="ai-habit-emoji">{resolveEmoji(habit.emoji)}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
