@@ -5,6 +5,7 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { HeatmapView } from './components/HeatmapView';
 import { SettingsView } from './components/SettingsView';
 import { HabitModal } from './components/HabitModal';
+import { ConfirmModal } from './components/ConfirmModal';
 import { AuthPage } from './components/AuthPage';
 import { AuthCallbackPage } from './components/AuthCallbackPage';
 import { useAuth } from './hooks/useAuth';
@@ -172,6 +173,7 @@ function AuthenticatedApp({ token, user, onLogout }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [habitToDelete, setHabitToDelete] = useState(null);
 
   // Close sidebar on Escape key
   useEffect(() => {
@@ -200,7 +202,18 @@ function AuthenticatedApp({ token, user, onLogout }) {
   };
 
   const handleDeleteHabit = (id) => {
-    if (window.confirm('Delete this habit? All completion data will be lost.')) deleteHabit(id);
+    setHabitToDelete(id);
+  };
+
+  const confirmDeleteHabit = () => {
+    if (habitToDelete) {
+      deleteHabit(habitToDelete);
+      setHabitToDelete(null);
+    }
+  };
+
+  const cancelDeleteHabit = () => {
+    setHabitToDelete(null);
   };
 
   const handleSaveHabit = async (habitData) => {
@@ -315,6 +328,14 @@ function AuthenticatedApp({ token, user, onLogout }) {
         onSave={handleSaveHabit}
         onClose={() => { setIsModalOpen(false); setEditingHabit(null); }}
         onAddCategory={handleAddCategory}
+      />
+
+      <ConfirmModal
+        isOpen={habitToDelete !== null}
+        title="Delete Habit"
+        message="Are you sure you want to delete this habit? All completion data will be lost."
+        onConfirm={confirmDeleteHabit}
+        onCancel={cancelDeleteHabit}
       />
     </div>
   );
