@@ -230,6 +230,15 @@ function AuthenticatedApp({ token, user, firstHabitPromptShown, markFirstHabitPr
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState(null);
 
+  // AI Coach state - persists across page navigation
+  const [aiCoachGoal, setAiCoachGoal] = useState('');
+  const [aiCoachPlan, setAiCoachPlan] = useState(null);
+  const [aiCoachLoading, setAiCoachLoading] = useState(false);
+  const [aiCoachError, setAiCoachError] = useState(null);
+  const [aiCoachAddedIndexes, setAiCoachAddedIndexes] = useState(new Set());
+  const [aiCoachAddingAll, setAiCoachAddingAll] = useState(false);
+  const [aiCoachAllAdded, setAiCoachAllAdded] = useState(false);
+
   // First-habit prompt: show once after onboarding
   const [showFirstHabitPrompt, setShowFirstHabitPrompt] = useState(false);
   const promptTimerRef = useRef(null);
@@ -303,6 +312,15 @@ function AuthenticatedApp({ token, user, firstHabitPromptShown, markFirstHabitPr
     try { await addCategory(name); } catch { /* logged in useHabits */ }
   };
 
+  // Reset AI Coach state (for "Try Another Goal" button)
+  const resetAiCoachState = () => {
+    setAiCoachGoal('');
+    setAiCoachPlan(null);
+    setAiCoachAllAdded(false);
+    setAiCoachAddedIndexes(new Set());
+    setAiCoachError(null);
+  };
+
   const getViewTitle = () => {
     const titles = { today: 'Today', analytics: 'Analytics', calendar: 'Heatmap', 'ai-coach': 'AI Coach', settings: 'Settings' };
     return titles[activeView] ?? 'Today';
@@ -333,7 +351,27 @@ function AuthenticatedApp({ token, user, firstHabitPromptShown, markFirstHabitPr
         );
       case 'analytics': return <AnalyticsView habits={habits} completions={completions} />;
       case 'calendar': return <HeatmapView habits={habits} completions={completions} />;
-      case 'ai-coach': return <AiCoachView onAddHabit={addHabit} categories={categories} />;
+      case 'ai-coach': return (
+          <AiCoachView
+            onAddHabit={addHabit}
+            categories={categories}
+            goal={aiCoachGoal}
+            setGoal={setAiCoachGoal}
+            plan={aiCoachPlan}
+            setPlan={setAiCoachPlan}
+            loading={aiCoachLoading}
+            setLoading={setAiCoachLoading}
+            error={aiCoachError}
+            setError={setAiCoachError}
+            addedIndexes={aiCoachAddedIndexes}
+            setAddedIndexes={setAiCoachAddedIndexes}
+            addingAll={aiCoachAddingAll}
+            setAddingAll={setAiCoachAddingAll}
+            allAdded={aiCoachAllAdded}
+            setAllAdded={setAiCoachAllAdded}
+            onReset={resetAiCoachState}
+          />
+        );
       case 'settings': return <SettingsView />;
       default: return null;
     }

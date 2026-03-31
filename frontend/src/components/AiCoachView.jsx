@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { getToken } from '../hooks/useAuth';
 import { COLORS, EMOJIS } from '../constants';
 
@@ -25,16 +25,34 @@ function resolveEmoji(aiEmoji) {
  * Props:
  *   onAddHabit(habitData) — the existing addHabit function from useHabits
  *   categories            — current user categories array
+ *   goal, setGoal         — goal state and setter
+ *   plan, setPlan         — plan state and setter
+ *   loading, setLoading   — loading state and setter
+ *   error, setError       — error state and setter
+ *   addedIndexes, setAddedIndexes — added indexes state and setter
+ *   addingAll, setAddingAll — adding all state and setter
+ *   allAdded, setAllAdded — all added state and setter
+ *   onReset               — reset all AI Coach state
  */
-export function AiCoachView({ onAddHabit, categories }) {
-  const [goal, setGoal] = useState('');
-  const [plan, setPlan] = useState(null);       // the structured plan from AI
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [addedIndexes, setAddedIndexes] = useState(new Set()); // which habits are added
-  const [addingAll, setAddingAll] = useState(false);
-  const [allAdded, setAllAdded] = useState(false);
-
+export function AiCoachView({
+  onAddHabit,
+  categories,
+  goal,
+  setGoal,
+  plan,
+  setPlan,
+  loading,
+  setLoading,
+  error,
+  setError,
+  addedIndexes,
+  setAddedIndexes,
+  addingAll,
+  setAddingAll,
+  allAdded,
+  setAllAdded,
+  onReset,
+}) {
   // Derive a safe category — use first user category or a generic fallback
   const defaultCategory = categories?.[0] ?? 'General';
 
@@ -231,7 +249,7 @@ export function AiCoachView({ onAddHabit, categories }) {
           {/* Try again */}
           <button
             className="ai-try-again-btn"
-            onClick={() => { setPlan(null); setGoal(''); setAllAdded(false); setAddedIndexes(new Set()); }}
+            onClick={onReset}
           >
             ← Try a different goal
           </button>

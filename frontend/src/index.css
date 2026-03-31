@@ -1116,6 +1116,7 @@ body {
 
 .ai-coach-view {
   max-width: 720px;
+  margin: 0 auto;
 }
 
 .ai-coach-hero {
@@ -1625,6 +1626,44 @@ body {
   }
   .ai-coach-view {
     max-width: 100%;
+    padding: 0 8px;
+  }
+  .ai-coach-suggestions {
+    gap: 10px;
+  }
+  .ai-suggestion-chip {
+    padding: 14px 16px;
+    font-size: 14px;
+  }
+  .ai-plan-habits {
+    gap: 14px;
+  }
+  .ai-habit-card {
+    padding: 14px 16px 18px;
+  }
+  .ai-habit-card-top {
+    gap: 10px;
+  }
+  .ai-habit-emoji {
+    font-size: 22px;
+  }
+  .ai-habit-name {
+    font-size: 14px;
+  }
+  .ai-habit-why {
+    font-size: 12px;
+  }
+  .ai-plan-tip {
+    padding: 12px 14px;
+    font-size: 12px;
+  }
+  .ai-add-all-btn {
+    padding: 12px;
+    font-size: 14px;
+  }
+  .ai-all-added-msg {
+    padding: 12px 14px;
+    font-size: 13px;
   }
 
   .icon-picker {
