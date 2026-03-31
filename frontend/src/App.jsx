@@ -273,6 +273,14 @@ function AuthenticatedApp({ token, user, firstHabitPromptShown, markFirstHabitPr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstHabitPromptShown]);
 
+  // If user has any habits but firstHabitPromptShown is still false, mark it as true
+  // This ensures the prompt is prevented from appearing if habits exist
+  useEffect(() => {
+    if (habits.length > 0 && !firstHabitPromptShown) {
+      markFirstHabitPromptShown();
+    }
+  }, [habits.length, firstHabitPromptShown, markFirstHabitPromptShown]);
+
   const handleDismissFirstHabitPrompt = async () => {
     setShowFirstHabitPrompt(false);
     await markFirstHabitPromptShown();
