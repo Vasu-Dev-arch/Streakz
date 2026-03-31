@@ -6,9 +6,11 @@
 /* Container */
 .auth-container {
   min-height: 100vh;
+  height: 100vh;
   display: flex;
   font-family: var(--sans);
   background: var(--bg);
+  overflow: hidden;
 }
 
 /* Left Section - Branding */
@@ -381,8 +383,11 @@
 /* Entrance Animations */
 @keyframes slideFromCenter {
   0% {
-    transform: translateX(25%);
-    opacity: 0.8;
+    transform: translateX(50%);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
   }
   100% {
     transform: translateX(0);
@@ -393,11 +398,55 @@
 @keyframes fadeInRight {
   0% {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateX(40px);
   }
   100% {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes slideOutLeft {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -497,9 +546,28 @@
 @media (max-width: 1024px) {
   .auth-container {
     flex-direction: column;
+    height: auto;
+    min-height: 100vh;
   }
 
   .auth-left-section {
+    display: none;
+  }
+
+  .auth-left-content {
+    max-width: 100%;
+  }
+
+  .auth-tagline {
+    font-size: 28px;
+    margin-bottom: 24px;
+  }
+
+  .auth-features-container {
+    display: none;
+  }
+
+  .auth-demo-preview {
     display: none;
   }
 
@@ -514,16 +582,21 @@
 }
 
 @media (max-width: 640px) {
+  .auth-left-section {
+    padding: 32px 20px;
+  }
+
+  .auth-tagline {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
   .auth-right-section {
     padding: 20px;
   }
 
   .auth-form-title {
     font-size: 24px;
-  }
-
-  .auth-tagline {
-    font-size: 32px;
   }
 
   .auth-google-button {
