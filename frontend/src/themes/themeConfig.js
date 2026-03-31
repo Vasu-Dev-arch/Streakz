@@ -75,9 +75,9 @@ export const lightTheme = {
     textTertiary: '#6c757d',
     textInverse: '#ffffff',
     
-    // Accents
-    accent: '#7c6af7',
-    accentSecondary: '#a599ff',
+    // Accents - Improved contrast for accessibility
+    accent: '#5b4cc4',
+    accentSecondary: '#7c3aed',
     
     // Semantic
     success: '#22c97a',
@@ -86,7 +86,7 @@ export const lightTheme = {
     info: '#3b82f6',
     
     // Interactive
-    focus: '#7c6af7',
+    focus: '#5b4cc4',
     hover: 'rgba(0, 0, 0, 0.05)',
     active: 'rgba(0, 0, 0, 0.1)',
     disabled: '#adb5bd',

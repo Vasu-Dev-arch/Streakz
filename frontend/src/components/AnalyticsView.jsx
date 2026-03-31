@@ -45,7 +45,7 @@ export function AnalyticsView({ habits, completions }) {
     chartsRef.current.weekly?.destroy();
     chartsRef.current.weekly = new Chart(weeklyChartRef.current.getContext('2d'), {
       type: 'line',
-      data: { labels, datasets: [{ data, borderColor: '#7c6af7', backgroundColor: 'rgba(124,106,247,0.08)', fill: true, tension: 0.4, pointBackgroundColor: '#7c6af7', pointRadius: 3, borderWidth: 2 }] },
+      data: { labels, datasets: [{ data, borderColor: '#5b4cc4', backgroundColor: 'rgba(91,76,196,0.08)', fill: true, tension: 0.4, pointBackgroundColor: '#5b4cc4', pointRadius: 3, borderWidth: 2 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
@@ -80,7 +80,7 @@ export function AnalyticsView({ habits, completions }) {
     chartsRef.current.daily?.destroy();
     chartsRef.current.daily = new Chart(dailyChartRef.current.getContext('2d'), {
       type: 'bar',
-      data: { labels, datasets: [{ data, backgroundColor: data.map((_, i) => i === 29 ? '#7c6af7' : 'rgba(124,106,247,0.4)'), borderRadius: 4 }] },
+      data: { labels, datasets: [{ data, backgroundColor: data.map((_, i) => i === 29 ? '#5b4cc4' : 'rgba(91,76,196,0.4)'), borderRadius: 4 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
