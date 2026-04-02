@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HABIT_ICONS, COLORS, DEFAULT_ICON_ID, DAY_LETTERS } from '../constants';
+import { HABIT_ICONS, COLORS, DEFAULT_ICON_ID, DAY_LETTERS, EMOJIS } from '../constants';
 import { HabitIcon } from './HabitIcon';
 
 const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -8,6 +8,8 @@ export function HabitModal({ isOpen, habit, categories, onSave, onClose, onAddCa
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedIcon, setSelectedIcon] = useState(DEFAULT_ICON_ID);
+  const [selectedEmoji, setSelectedEmoji] = useState('');
+  const [useEmojis, setUseEmojis] = useState(false);
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [frequencyType, setFrequencyType] = useState('daily');
@@ -21,6 +23,8 @@ export function HabitModal({ isOpen, habit, categories, onSave, onClose, onAddCa
       setName(habit.name || '');
       setDescription(habit.description || '');
       setSelectedIcon(habit.icon || DEFAULT_ICON_ID);
+      setSelectedEmoji(habit.emoji || '');
+      setUseEmojis(!!habit.emoji);
       setSelectedColor(habit.color || COLORS[0]);
       setSelectedCategory(habit.category || (categories.length > 0 ? categories[0] : ''));
       setFrequencyType(habit.frequencyType || 'daily');
@@ -29,6 +33,8 @@ export function HabitModal({ isOpen, habit, categories, onSave, onClose, onAddCa
       setName('');
       setDescription('');
       setSelectedIcon(DEFAULT_ICON_ID);
+      setSelectedEmoji('');
+      setUseEmojis(false);
       setSelectedColor(COLORS[0]);
       setSelectedCategory(categories.length > 0 ? categories[0] : '');
       setFrequencyType('daily');
@@ -51,8 +57,8 @@ export function HabitModal({ isOpen, habit, categories, onSave, onClose, onAddCa
     onSave({
       name: name.trim(),
       description: description.trim(),
-      icon: selectedIcon,
-      emoji: '',
+      icon: useEmojis ? '' : selectedIcon,
+      emoji: useEmojis ? selectedEmoji : '',
       color: selectedColor,
       category: selectedCategory,
       frequencyType,
@@ -134,24 +140,99 @@ export function HabitModal({ isOpen, habit, categories, onSave, onClose, onAddCa
           />
         </div>
 
-        {/* Icon picker */}
+        {/* Icon/Emoji picker tabs */}
         <div className="form-group">
           <label className="form-label">Icon</label>
-          <div className="icon-picker">
-            {HABIT_ICONS.map((icon) => (
-              <button
-                key={icon.id}
-                type="button"
-                className={`icon-btn${icon.id === selectedIcon ? ' selected' : ''}`}
-                onClick={() => setSelectedIcon(icon.id)}
-                title={icon.label}
-                aria-label={icon.label}
-                aria-pressed={icon.id === selectedIcon}
-              >
-                <HabitIcon iconId={icon.id} size={18} color={icon.id === selectedIcon ? selectedColor : 'currentColor'} />
-              </button>
-            ))}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            <button
+              type="button"
+              onClick={() => setUseEmojis(false)}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: `1px solid ${!useEmojis ? 'var(--accent)' : 'var(--border)'}`,
+                background: !useEmojis ? 'rgba(124, 106, 247, 0.15)' : 'transparent',
+                color: !useEmojis ? 'var(--accent2)' : 'var(--text2)',
+                fontFamily: 'var(--sans)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              Icons
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseEmojis(true)}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: `1px solid ${useEmojis ? 'var(--accent)' : 'var(--border)'}`,
+                background: useEmojis ? 'rgba(124, 106, 247, 0.15)' : 'transparent',
+                color: useEmojis ? 'var(--accent2)' : 'var(--text2)',
+                fontFamily: 'var(--sans)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              Emojis
+            </button>
           </div>
+
+          {useEmojis ? (
+            <div
+              className="icon-picker"
+              style={{
+                maxHeight: '300px',
+                overflowY: 'auto',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+            >
+              {EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  className={`icon-btn${emoji === selectedEmoji ? ' selected' : ''}`}
+                  onClick={() => setSelectedEmoji(emoji)}
+                  style={{ fontSize: '20px' }}
+                  aria-label={emoji}
+                  aria-pressed={emoji === selectedEmoji}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div
+              className="icon-picker"
+              style={{
+                maxHeight: '300px',
+                overflowY: 'auto',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+            >
+              {HABIT_ICONS.map((icon) => (
+                <button
+                  key={icon.id}
+                  type="button"
+                  className={`icon-btn${icon.id === selectedIcon ? ' selected' : ''}`}
+                  onClick={() => setSelectedIcon(icon.id)}
+                  title={icon.label}
+                  aria-label={icon.label}
+                  aria-pressed={icon.id === selectedIcon}
+                >
+                  <HabitIcon iconId={icon.id} size={18} color={icon.id === selectedIcon ? selectedColor : 'currentColor'} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Color */}

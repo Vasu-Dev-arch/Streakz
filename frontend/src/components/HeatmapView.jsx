@@ -85,11 +85,10 @@ function buildGrid(getCellValue, getMax, showTip, hideTip) {
   return { cols, monthLabels };
 }
 
-function HeatmapGrid({ getCellValue, getMax, showTip, hideTip }) {
+function HeatmapGrid({ getCellValue, getMax, showTip, hideTip, completions }) {
   const { cols, monthLabels } = useMemo(
     () => buildGrid(getCellValue, getMax, showTip, hideTip),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [getCellValue, getMax, showTip, hideTip]
   );
 
   const dayLabels = DAY_LETTERS.map((l, i) => (
@@ -146,6 +145,7 @@ export function HeatmapView({ habits, completions }) {
             getMax={overallGetMax}
             showTip={showTip}
             hideTip={hideTip}
+            completions={completions}
           />
         </div>
 
@@ -207,6 +207,7 @@ export function HeatmapView({ habits, completions }) {
                 getMax={habitGetMax}
                 showTip={showTip}
                 hideTip={hideTip}
+                completions={completions}
               />
             </div>
           );

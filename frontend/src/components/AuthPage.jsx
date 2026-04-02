@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./AuthPage.css";
-import logo from "../../dist/assets/logo.png";
+import logo from "/assets/logo.png";
 
 /**
  * Combined Login / Signup page with modern split-screen layout.

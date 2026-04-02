@@ -241,6 +241,9 @@ function AuthenticatedApp({ token, user, firstHabitPromptShown, markFirstHabitPr
 
   // First-habit prompt: show once after onboarding
   const [showFirstHabitPrompt, setShowFirstHabitPrompt] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(() => {
+    return localStorage.getItem('firstHabitPromptDismissed') === 'true';
+  });
   const promptTimerRef = useRef(null);
 
   useEffect(() => {
@@ -255,23 +258,22 @@ function AuthenticatedApp({ token, user, firstHabitPromptShown, markFirstHabitPr
   }, [sidebarOpen]);
 
   const {
-    habits, completions, dailyGoal, reminderTime, categories,
+    habits, completions, dailyGoal, reminderTime, categories, loading,
     toggleHabit, addHabit, updateHabit, deleteHabit,
     updateDailyGoal, updateReminderTime, addCategory,
   } = useHabits(token);
 
-  // Show prompt once after data loads if not yet shown
+  // Show prompt once after data loads if not yet shown and no habits exist
   useEffect(() => {
+    if (loading) return;
+    if (dontShowAgain) return;
     if (!firstHabitPromptShown && habits.length === 0) {
-      // Small delay so the dashboard renders first
       promptTimerRef.current = setTimeout(() => {
         setShowFirstHabitPrompt(true);
       }, 600);
     }
     return () => clearTimeout(promptTimerRef.current);
-    // Run once when habits are first known
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firstHabitPromptShown]);
+  }, [firstHabitPromptShown, habits.length, loading, dontShowAgain]);
 
   // If user has any habits but firstHabitPromptShown is still false, mark it as true
   // This ensures the prompt is prevented from appearing if habits exist
@@ -283,6 +285,13 @@ function AuthenticatedApp({ token, user, firstHabitPromptShown, markFirstHabitPr
 
   const handleDismissFirstHabitPrompt = async () => {
     setShowFirstHabitPrompt(false);
+    await markFirstHabitPromptShown();
+  };
+
+  const handleDontShowAgain = async () => {
+    setShowFirstHabitPrompt(false);
+    setDontShowAgain(true);
+    localStorage.setItem('firstHabitPromptDismissed', 'true');
     await markFirstHabitPromptShown();
   };
 
@@ -380,7 +389,7 @@ function AuthenticatedApp({ token, user, firstHabitPromptShown, markFirstHabitPr
             onReset={resetAiCoachState}
           />
         );
-      case 'settings': return <SettingsView />;
+      case 'settings': return <SettingsView user={user} logout={onLogout} />;
       default: return null;
     }
   };
@@ -457,6 +466,7 @@ function AuthenticatedApp({ token, user, firstHabitPromptShown, markFirstHabitPr
         isOpen={showFirstHabitPrompt}
         onAddHabit={handleFirstHabitAdd}
         onLater={handleDismissFirstHabitPrompt}
+        onDontShowAgain={handleDontShowAgain}
       />
     </div>
   );

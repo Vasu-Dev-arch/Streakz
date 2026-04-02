@@ -1,7 +1,7 @@
 import React from "react";
 import { getStreak } from "../utils/dateUtils";
 import { HabitIcon } from "./HabitIcon";
-import logo from "../../dist/assets/logo.png";
+import logo from "/assets/logo.png";
 
 /**
  * Sidebar — desktop: always visible sticky column.

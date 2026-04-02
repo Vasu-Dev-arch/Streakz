@@ -4,11 +4,12 @@ import React from 'react';
  * Modal shown once after onboarding to prompt the user to create their first habit.
  *
  * Props:
- *   isOpen      — boolean
- *   onAddHabit  — () => void  — opens the habit creation modal
- *   onLater     — () => void  — dismisses and marks as shown
+ *   isOpen           — boolean
+ *   onAddHabit       — () => void  — opens the habit creation modal
+ *   onLater          — () => void  — dismisses and marks as shown
+ *   onDontShowAgain  — () => void  — marks as shown permanently
  */
-export function FirstHabitPrompt({ isOpen, onAddHabit, onLater }) {
+export function FirstHabitPrompt({ isOpen, onAddHabit, onLater, onDontShowAgain }) {
   if (!isOpen) return null;
 
   return (
@@ -80,7 +81,7 @@ export function FirstHabitPrompt({ isOpen, onAddHabit, onLater }) {
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '16px' }}>
           <button
             onClick={onLater}
             style={{
@@ -106,6 +107,25 @@ export function FirstHabitPrompt({ isOpen, onAddHabit, onLater }) {
             Add First Habit
           </button>
         </div>
+
+        <button
+          onClick={() => {
+            if (onDontShowAgain) onDontShowAgain();
+            onLater();
+          }}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--text3)',
+            fontSize: '12px',
+            fontFamily: 'var(--mono)',
+            cursor: 'pointer',
+            padding: '8px 0',
+            textDecoration: 'underline',
+          }}
+        >
+          Don't show again
+        </button>
       </div>
     </div>
   );

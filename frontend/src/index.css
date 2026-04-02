@@ -736,6 +736,19 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
   gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.icon-picker::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for icon picker but allow scrolling */
+.icon-picker.no-scroll {
+  overflow: visible;
+  max-height: none;
 }
 
 .icon-btn {

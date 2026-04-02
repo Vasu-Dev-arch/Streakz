@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getToken } from './useAuth';
 import { todayKey } from '../utils/dateUtils';
+import { DEFAULT_ICON_ID } from '../constants';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
 
@@ -53,6 +54,7 @@ export function useHabits(token) {
   const [dailyGoal, setDailyGoal] = useState(3);
   const [reminderTime, setReminderTime] = useState(null);
   const [categories, setCategories] = useState(['study', 'fitness', 'work']);
+  const [loading, setLoading] = useState(true);
 
   // ── Initial load — re-runs whenever auth state changes ──────────────────────
   useEffect(() => {
@@ -70,6 +72,7 @@ export function useHabits(token) {
 
     async function loadAll() {
       try {
+        setLoading(true);
         const [habitsData, completionsData, settingsData] = await Promise.all([
           apiFetch('/api/habits'),
           apiFetch('/api/completions'),
@@ -89,6 +92,8 @@ export function useHabits(token) {
         );
       } catch (err) {
         console.error('Failed to load initial data:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -103,8 +108,10 @@ export function useHabits(token) {
       body: JSON.stringify({
         name: habit.name,
         emoji: habit.emoji ?? '',
+        icon: habit.icon ?? DEFAULT_ICON_ID,
         color: habit.color ?? '#22c97a',
         category: habit.category,
+        description: habit.description ?? '',
       }),
     });
     setHabits((prev) => [...prev, data]);
@@ -228,6 +235,7 @@ export function useHabits(token) {
     dailyGoal,
     reminderTime,
     categories,
+    loading,
     toggleHabit,
     addHabit,
     updateHabit,
