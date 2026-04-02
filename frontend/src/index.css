@@ -627,34 +627,36 @@ body {
 
 /* ── Heatmap ───────────────────────────────────────────────────────────────── */
 .heatmap-sq {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 2px;
-  background: var(--bg4);
+  background: var(--theme-backgroundQuaternary, #222228);
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: all 0.15s;
 }
 .heatmap-sq:hover {
-  opacity: 0.75;
+  transform: scale(1.2);
+  outline: 1px solid var(--theme-accent, #7c6af7);
 }
 .heatmap-sq.l1 {
-  background: rgba(124, 106, 247, 0.22);
+  background: var(--theme-accentSecondary, #a599ff);
 }
 .heatmap-sq.l2 {
-  background: rgba(124, 106, 247, 0.4);
+  background: rgba(124, 106, 247, 0.5);
 }
 .heatmap-sq.l3 {
-  background: rgba(124, 106, 247, 0.58);
+  background: rgba(124, 106, 247, 0.75);
 }
 .heatmap-sq.l4 {
-  background: rgba(124, 106, 247, 0.78);
+  background: var(--theme-accentSecondary, #a599ff);
 }
-.heatmap-sq.l5 {
-  background: var(--accent2);
+.heatmap-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
-.heatmap-sq--future {
-  opacity: 0.25;
-  cursor: default;
+.heatmap-scroll-container {
+  padding: 8px 0;
 }
 
 /* ── Modal ─────────────────────────────────────────────────────────────────── */
