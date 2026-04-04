@@ -194,7 +194,10 @@ npm run dev
 **Vasudevan**  
 Full-Stack & AI Engineer 
 
-<a href="https://github.com/Vasu-Dev-arch" target="_blank">Github</a> | <a href="https://linkedin.com/in/vasudevan-j" target="_blank">LinkedIn</a> | <a href="https://vasu-dev-arch.github.io/New-Portfolio" target="_blank">Portfolio</a>
+[Github](https://github.com/Vasu-Dev-arch) | 
+[LinkedIn](https://linkedin.com/in/vasudevan-j) | 
+[Portfolio](https://vasu-dev-arch.github.io/New-Portfolio)
+
 ---
 
 > Building consistency through small daily actions.
