@@ -1,20 +1,26 @@
-import React, { useState } from "react";
-import "./AuthPage.css";
-import logo from "/assets/logo.png";
+'use client';
+
+import React, { useState } from 'react';
+import Image from 'next/image';
+import './AuthPage.css';
 
 /**
  * Combined Login / Signup page with modern split-screen layout.
  * Calls onLogin / onSignup for email+password, onGoogleLogin for OAuth.
+ *
+ * Changed from Vite:
+ *   - Logo import replaced with Next.js <Image> using public path "/assets/logo.png"
+ *   - Added 'use client' directive
  */
 export function AuthPage({ onLogin, onSignup, onGoogleLogin, error, loading }) {
-  const [mode, setMode] = useState("login"); // 'login' | 'signup'
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (mode === "signup") {
+    if (mode === 'signup') {
       await onSignup({ name, email, password });
     } else {
       await onLogin({ email, password });
@@ -23,13 +29,18 @@ export function AuthPage({ onLogin, onSignup, onGoogleLogin, error, loading }) {
 
   return (
     <div className="auth-container">
-      {/* Left Section - Branding */}
+      {/* Left Section — Branding */}
       <div className="auth-left-section">
         <div className="auth-left-content">
           {/* Logo */}
           <div className="auth-logo-container">
             <div className="auth-logo-icon">
-              <img src={logo} alt="logo" width="32" height="32" />
+              <Image
+                src="/assets/logo.png"
+                alt="Streakz logo"
+                width={32}
+                height={32}
+              />
             </div>
             <div className="auth-logo-text">Streakz</div>
           </div>
@@ -94,7 +105,7 @@ export function AuthPage({ onLogin, onSignup, onGoogleLogin, error, loading }) {
                 </svg>
               }
               title="AI Habit Coach"
-              description="Personalized recommendations powered by AI"
+              description="Personalised recommendations powered by AI"
             />
           </div>
 
@@ -125,13 +136,18 @@ export function AuthPage({ onLogin, onSignup, onGoogleLogin, error, loading }) {
         </div>
       </div>
 
-      {/* Right Section - Auth Form */}
+      {/* Right Section — Auth Form */}
       <div className="auth-right-section">
         <div className="auth-form-container">
           {/* Mobile Logo */}
           <div className="auth-mobile-logo">
             <div className="auth-logo-icon">
-              <img src={logo} alt="logo" width="28" height="28" />
+              <Image
+                src="/assets/logo.png"
+                alt="Streakz logo"
+                width={28}
+                height={28}
+              />
             </div>
             <div className="auth-mobile-logo-text">Streakz</div>
           </div>
@@ -139,26 +155,26 @@ export function AuthPage({ onLogin, onSignup, onGoogleLogin, error, loading }) {
           {/* Form Header */}
           <div className="auth-form-header">
             <h2 className="auth-form-title">
-              {mode === "login" ? "Welcome back" : "Create account"}
+              {mode === 'login' ? 'Welcome back' : 'Create account'}
             </h2>
             <p className="auth-form-subtitle">
-              {mode === "login"
-                ? "Sign in to continue your journey"
-                : "Start building better habits today"}
+              {mode === 'login'
+                ? 'Sign in to continue your journey'
+                : 'Start building better habits today'}
             </p>
           </div>
 
           {/* Mode Tabs */}
           <div className="auth-tab-container">
             <button
-              onClick={() => setMode("login")}
-              className={`auth-tab ${mode === "login" ? "active" : ""}`}
+              onClick={() => setMode('login')}
+              className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
             >
               Log in
             </button>
             <button
-              onClick={() => setMode("signup")}
-              className={`auth-tab ${mode === "signup" ? "active" : ""}`}
+              onClick={() => setMode('signup')}
+              className={`auth-tab ${mode === 'signup' ? 'active' : ''}`}
             >
               Sign up
             </button>
@@ -206,7 +222,7 @@ export function AuthPage({ onLogin, onSignup, onGoogleLogin, error, loading }) {
 
           {/* Email/Password Form */}
           <form onSubmit={handleSubmit}>
-            {mode === "signup" && (
+            {mode === 'signup' && (
               <div className="auth-input-group">
                 <label className="auth-label">Name</label>
                 <input
@@ -282,21 +298,21 @@ export function AuthPage({ onLogin, onSignup, onGoogleLogin, error, loading }) {
                   </svg>
                   Please wait…
                 </span>
-              ) : mode === "login" ? (
-                "Log in"
+              ) : mode === 'login' ? (
+                'Log in'
               ) : (
-                "Create account"
+                'Create account'
               )}
             </button>
           </form>
 
           {/* Footer */}
           <div className="auth-footer">
-            {mode === "login" ? (
+            {mode === 'login' ? (
               <p className="auth-footer-text">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{' '}
                 <button
-                  onClick={() => setMode("signup")}
+                  onClick={() => setMode('signup')}
                   className="auth-footer-link"
                 >
                   Sign up
@@ -304,9 +320,9 @@ export function AuthPage({ onLogin, onSignup, onGoogleLogin, error, loading }) {
               </p>
             ) : (
               <p className="auth-footer-text">
-                Already have an account?{" "}
+                Already have an account?{' '}
                 <button
-                  onClick={() => setMode("login")}
+                  onClick={() => setMode('login')}
                   className="auth-footer-link"
                 >
                   Log in
@@ -320,9 +336,6 @@ export function AuthPage({ onLogin, onSignup, onGoogleLogin, error, loading }) {
   );
 }
 
-/**
- * Feature card component for the left section
- */
 function FeatureCard({ icon, title, description }) {
   return (
     <div className="auth-feature-card">

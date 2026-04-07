@@ -1,11 +1,17 @@
-import React from "react";
-import { getStreak } from "../utils/dateUtils";
-import { HabitIcon } from "./HabitIcon";
-import logo from "/assets/logo.png";
+'use client';
+
+import React from 'react';
+import Image from 'next/image';
+import { getStreak } from '../utils/dateUtils';
+import { HabitIcon } from './HabitIcon';
 
 /**
  * Sidebar — desktop: always visible sticky column.
- *           mobile:  off-canvas drawer, toggled by App via isOpen/onClose.
+ *           mobile:  off-canvas drawer, toggled by DashboardShell.
+ *
+ * Changed from Vite:
+ *   - Logo import replaced with Next.js <Image> using public path "/assets/logo.png"
+ *   - Added 'use client' directive
  */
 export function Sidebar({
   habits,
@@ -22,7 +28,7 @@ export function Sidebar({
   };
 
   return (
-    <aside className={`sidebar${isOpen ? " sidebar--open" : ""}`}>
+    <aside className={`sidebar${isOpen ? ' sidebar--open' : ''}`}>
       <button
         className="sidebar-close-btn"
         onClick={onClose}
@@ -34,21 +40,14 @@ export function Sidebar({
       <div className="sidebar-logo">
         <div
           className="logo-mark"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            fontWeight: "700",
-          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}
         >
-          <img
-            src={logo}
-            alt="logo"
-            style={{
-              width: "24px",
-              height: "24px",
-              objectFit: "contain",
-            }}
+          <Image
+            src="/assets/logo.png"
+            alt="Streakz logo"
+            width={24}
+            height={24}
+            style={{ objectFit: 'contain' }}
           />
           <span>Streakz</span>
         </div>
@@ -58,18 +57,11 @@ export function Sidebar({
       <div className="sidebar-section-label">Navigate</div>
       <ul className="nav-list">
         <li
-          className={`nav-item${activeView === "today" ? " active" : ""}`}
-          onClick={() => handleNavClick("today")}
+          className={`nav-item${activeView === 'today' ? ' active' : ''}`}
+          onClick={() => handleNavClick('today')}
         >
           <span className="nav-icon">
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="4" width="18" height="18" rx="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
@@ -80,18 +72,11 @@ export function Sidebar({
         </li>
 
         <li
-          className={`nav-item${activeView === "analytics" ? " active" : ""}`}
-          onClick={() => handleNavClick("analytics")}
+          className={`nav-item${activeView === 'analytics' ? ' active' : ''}`}
+          onClick={() => handleNavClick('analytics')}
         >
           <span className="nav-icon">
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
             </svg>
           </span>
@@ -99,18 +84,11 @@ export function Sidebar({
         </li>
 
         <li
-          className={`nav-item${activeView === "calendar" ? " active" : ""}`}
-          onClick={() => handleNavClick("calendar")}
+          className={`nav-item${activeView === 'heatmap' ? ' active' : ''}`}
+          onClick={() => handleNavClick('heatmap')}
         >
           <span className="nav-icon">
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="4" width="18" height="18" rx="2" />
               <path d="M8 2v4M16 2v4M3 10h18" />
             </svg>
@@ -119,18 +97,11 @@ export function Sidebar({
         </li>
 
         <li
-          className={`nav-item${activeView === "ai-coach" ? " active" : ""}`}
-          onClick={() => handleNavClick("ai-coach")}
+          className={`nav-item${activeView === 'ai-coach' ? ' active' : ''}`}
+          onClick={() => handleNavClick('ai-coach')}
         >
           <span className="nav-icon">
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" />
               <path d="M12 8v4l3 3" />
             </svg>
@@ -140,18 +111,11 @@ export function Sidebar({
         </li>
 
         <li
-          className={`nav-item${activeView === "settings" ? " active" : ""}`}
-          onClick={() => handleNavClick("settings")}
+          className={`nav-item${activeView === 'settings' ? ' active' : ''}`}
+          onClick={() => handleNavClick('settings')}
         >
           <span className="nav-icon">
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
@@ -165,10 +129,10 @@ export function Sidebar({
         {habits.length === 0 ? (
           <div
             style={{
-              padding: "8px 12px",
-              fontSize: "12px",
-              color: "var(--text3)",
-              fontFamily: "var(--mono)",
+              padding: '8px 12px',
+              fontSize: '12px',
+              color: 'var(--text3)',
+              fontFamily: 'var(--mono)',
             }}
           >
             No habits yet
@@ -180,12 +144,9 @@ export function Sidebar({
               <div
                 key={habit.id}
                 className="habit-sidebar-item"
-                onClick={() => handleNavClick("today")}
+                onClick={() => handleNavClick('today')}
               >
-                <span
-                  className="habit-dot"
-                  style={{ background: habit.color }}
-                />
+                <span className="habit-dot" style={{ background: habit.color }} />
                 <HabitIcon
                   iconId={habit.icon}
                   emoji={habit.emoji}
@@ -195,7 +156,7 @@ export function Sidebar({
                 />
                 <span className="habit-sidebar-name">{habit.name}</span>
                 <span className="habit-sidebar-streak">
-                  {streak > 0 ? `🔥${streak}` : ""}
+                  {streak > 0 ? `🔥${streak}` : ''}
                 </span>
               </div>
             );

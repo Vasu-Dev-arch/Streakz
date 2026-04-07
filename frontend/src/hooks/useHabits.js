@@ -3,13 +3,14 @@ import { getToken } from './useAuth';
 import { todayKey } from '../utils/dateUtils';
 import { DEFAULT_ICON_ID } from '../constants';
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+// ── Environment ────────────────────────────────────────────────────────────────
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 
 /**
  * Central fetch helper.
  * Reads the token fresh from localStorage on every call so it is always
  * current, even if the token was written after the hook first mounted.
- * No prop-threading required — importers just call apiFetch().
  */
 async function apiFetch(path, options = {}) {
   const token = getToken();
@@ -24,7 +25,9 @@ async function apiFetch(path, options = {}) {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`${options.method ?? 'GET'} ${path} failed: ${res.status} ${text}`);
+    throw new Error(
+      `${options.method ?? 'GET'} ${path} failed: ${res.status} ${text}`
+    );
   }
   if (res.status === 204) return null;
   return res.json();
@@ -45,8 +48,7 @@ function buildCompletionsMap(docs) {
 /**
  * Custom hook — all data comes from the backend, scoped to the authenticated user.
  * @param {string|null} token  JWT from useAuth — used only as a trigger to
- *                             reload data when auth state changes; the actual
- *                             token value is read inside apiFetch via getToken().
+ *                             reload data when auth state changes.
  */
 export function useHabits(token) {
   const [habits, setHabits] = useState([]);
@@ -59,7 +61,6 @@ export function useHabits(token) {
   // ── Initial load — re-runs whenever auth state changes ──────────────────────
   useEffect(() => {
     if (!token) {
-      // Clear all state on logout so no stale data leaks between accounts
       setHabits([]);
       setCompletions({});
       setDailyGoal(3);
@@ -82,7 +83,11 @@ export function useHabits(token) {
         if (cancelled) return;
 
         setHabits(Array.isArray(habitsData) ? habitsData : []);
-        setCompletions(buildCompletionsMap(Array.isArray(completionsData) ? completionsData : []));
+        setCompletions(
+          buildCompletionsMap(
+            Array.isArray(completionsData) ? completionsData : []
+          )
+        );
         setDailyGoal(settingsData?.dailyGoal ?? 3);
         setReminderTime(settingsData?.reminderTime ?? null);
         setCategories(
@@ -98,7 +103,9 @@ export function useHabits(token) {
     }
 
     loadAll();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   // ── Habits ──────────────────────────────────────────────────────────────────
@@ -205,29 +212,36 @@ export function useHabits(token) {
     }
   }, []);
 
-  const addCategory = useCallback(async (categoryName) => {
-    if (!categoryName || typeof categoryName !== 'string' || !categoryName.trim()) {
-      throw new Error('Category name must be a non-empty string');
-    }
-    const trimmedName = categoryName.trim();
-    if (categories.includes(trimmedName)) {
-      throw new Error('Category already exists');
-    }
-    const updatedCategories = [...categories, trimmedName];
-    setCategories(updatedCategories);
-    try {
-      const data = await apiFetch('/api/settings', {
-        method: 'PUT',
-        body: JSON.stringify({ categories: updatedCategories }),
-      });
-      setCategories(data.categories);
-      return data.categories;
-    } catch (err) {
-      console.error('Failed to add category:', err);
-      setCategories(categories); // rollback
-      throw err;
-    }
-  }, [categories]);
+  const addCategory = useCallback(
+    async (categoryName) => {
+      if (
+        !categoryName ||
+        typeof categoryName !== 'string' ||
+        !categoryName.trim()
+      ) {
+        throw new Error('Category name must be a non-empty string');
+      }
+      const trimmedName = categoryName.trim();
+      if (categories.includes(trimmedName)) {
+        throw new Error('Category already exists');
+      }
+      const updatedCategories = [...categories, trimmedName];
+      setCategories(updatedCategories);
+      try {
+        const data = await apiFetch('/api/settings', {
+          method: 'PUT',
+          body: JSON.stringify({ categories: updatedCategories }),
+        });
+        setCategories(data.categories);
+        return data.categories;
+      } catch (err) {
+        console.error('Failed to add category:', err);
+        setCategories(categories); // rollback
+        throw err;
+      }
+    },
+    [categories]
+  );
 
   return {
     habits,

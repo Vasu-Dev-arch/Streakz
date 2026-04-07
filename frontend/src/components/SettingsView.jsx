@@ -1,12 +1,19 @@
+'use client';
+
 /**
- * Settings View Component
- * 
- * Provides settings interface with General, Appearance, and Profile sections.
+ * SettingsView
+ *
+ * Changed from Vite:
+ *   - import.meta.env.VITE_API_URL → process.env.NEXT_PUBLIC_API_URL
+ *   - Added 'use client' directive
  */
 
 import React, { useState } from 'react';
 import { ThemeSelector } from './ThemeSelector';
 import './SettingsView.css';
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 
 export function SettingsView({ user, logout }) {
   const [activeSection, setActiveSection] = useState('profile');
@@ -28,7 +35,7 @@ export function SettingsView({ user, logout }) {
     setIsSaving(true);
     try {
       const token = localStorage.getItem('streaks_token');
-      const res = await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:5000'}/api/auth/profile`, {
+      const res = await fetch(`${API_BASE}/api/auth/profile`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -38,9 +45,7 @@ export function SettingsView({ user, logout }) {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.name) {
-          user.name = data.name;
-        }
+        if (data.name) user.name = data.name;
         setIsEditingName(false);
       }
     } catch (err) {
@@ -66,23 +71,23 @@ export function SettingsView({ user, logout }) {
             </p>
           </div>
         );
-      
+
       case 'appearance':
         return (
           <div className="settings-section">
             <h2 className="settings-section-title">Appearance</h2>
             <p className="settings-description">
-              Customize the look and feel of your application
+              Customise the look and feel of your application
             </p>
             <ThemeSelector />
           </div>
         );
-      
+
       case 'profile':
         return (
           <div className="settings-section">
             <h2 className="settings-section-title">Profile Settings</h2>
-            
+
             <div className="profile-info-card">
               <div className="profile-field">
                 <label className="profile-label">Username</label>
@@ -118,7 +123,9 @@ export function SettingsView({ user, logout }) {
                     </div>
                   ) : (
                     <>
-                      <span className="profile-value">{user?.name || 'Not set'}</span>
+                      <span className="profile-value">
+                        {user?.name || 'Not set'}
+                      </span>
                       <button
                         className="profile-edit-icon-btn"
                         onClick={() => {
@@ -127,7 +134,14 @@ export function SettingsView({ user, logout }) {
                         }}
                         title="Edit username"
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
                       </button>
@@ -138,7 +152,9 @@ export function SettingsView({ user, logout }) {
 
               <div className="profile-field">
                 <label className="profile-label">Email</label>
-                <span className="profile-value">{user?.email || 'Not set'}</span>
+                <span className="profile-value">
+                  {user?.email || 'Not set'}
+                </span>
               </div>
             </div>
 
@@ -149,7 +165,7 @@ export function SettingsView({ user, logout }) {
             </div>
           </div>
         );
-      
+
       default:
         return null;
     }
@@ -169,7 +185,9 @@ export function SettingsView({ user, logout }) {
           {sections.map((section) => (
             <button
               key={section.id}
-              className={`settings-nav-item ${activeSection === section.id ? 'active' : ''}`}
+              className={`settings-nav-item ${
+                activeSection === section.id ? 'active' : ''
+              }`}
               onClick={() => setActiveSection(section.id)}
             >
               <span className="settings-nav-icon">{section.icon}</span>
@@ -178,9 +196,7 @@ export function SettingsView({ user, logout }) {
           ))}
         </nav>
 
-        <div className="settings-main">
-          {renderSection()}
-        </div>
+        <div className="settings-main">{renderSection()}</div>
       </div>
     </div>
   );

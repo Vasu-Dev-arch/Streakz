@@ -1,39 +1,32 @@
+'use client';
+
+/**
+ * AiCoachView
+ *
+ * Changed from Vite:
+ *   - import.meta.env.VITE_API_URL → process.env.NEXT_PUBLIC_API_URL
+ *   - Added 'use client' directive
+ */
+
 import React from 'react';
 import { getToken } from '../hooks/useAuth';
 import { COLORS, EMOJIS } from '../constants';
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 
-// Pick a color deterministically by index so habits always get the same colour
 function colorFor(index) {
   return COLORS[index % COLORS.length];
 }
 
-// Map the AI emoji suggestion to the closest one in our constants set,
-// falling back gracefully if the model returns something unexpected.
 function resolveEmoji(aiEmoji) {
   if (aiEmoji && typeof aiEmoji === 'string') {
-    const trimmed = [...aiEmoji.trim()][0]; // take first grapheme cluster
+    const trimmed = [...aiEmoji.trim()][0];
     if (trimmed) return trimmed;
   }
   return EMOJIS[0];
 }
 
-/**
- * AI Habit Coach view.
- *
- * Props:
- *   onAddHabit(habitData) — the existing addHabit function from useHabits
- *   categories            — current user categories array
- *   goal, setGoal         — goal state and setter
- *   plan, setPlan         — plan state and setter
- *   loading, setLoading   — loading state and setter
- *   error, setError       — error state and setter
- *   addedIndexes, setAddedIndexes — added indexes state and setter
- *   addingAll, setAddingAll — adding all state and setter
- *   allAdded, setAllAdded — all added state and setter
- *   onReset               — reset all AI Coach state
- */
 export function AiCoachView({
   onAddHabit,
   categories,
@@ -53,7 +46,6 @@ export function AiCoachView({
   setAllAdded,
   onReset,
 }) {
-  // Derive a safe category — use first user category or a generic fallback
   const defaultCategory = categories?.[0] ?? 'General';
 
   const handleGenerate = async (e) => {
@@ -114,11 +106,12 @@ export function AiCoachView({
     setAllAdded(true);
   };
 
-  const notYetAdded = plan?.habits?.filter((_, i) => !addedIndexes.has(i)) ?? [];
+  const notYetAdded =
+    plan?.habits?.filter((_, i) => !addedIndexes.has(i)) ?? [];
 
   return (
     <div className="view active ai-coach-view">
-      {/* ── Header banner ─────────────────────────────────────────────── */}
+      {/* Header banner */}
       <div className="ai-coach-hero">
         <div className="ai-coach-hero-icon">✦</div>
         <div>
@@ -129,7 +122,7 @@ export function AiCoachView({
         </div>
       </div>
 
-      {/* ── Input section ─────────────────────────────────────────────── */}
+      {/* Input */}
       <form className="ai-coach-form" onSubmit={handleGenerate}>
         <div className="ai-coach-input-row">
           <input
@@ -160,14 +153,23 @@ export function AiCoachView({
           </button>
         </div>
         <p className="ai-coach-hint">
-          Be specific for better results — mention your schedule, obstacles, or lifestyle.
+          Be specific for better results — mention your schedule, obstacles, or
+          lifestyle.
         </p>
       </form>
 
-      {/* ── Error ─────────────────────────────────────────────────────── */}
+      {/* Error */}
       {error && (
         <div className="ai-coach-error">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
+          <svg
+            width="16"
+            height="16"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+            style={{ flexShrink: 0 }}
+          >
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -176,24 +178,27 @@ export function AiCoachView({
         </div>
       )}
 
-      {/* ── Plan output ───────────────────────────────────────────────── */}
+      {/* Plan output */}
       {plan && (
         <div className="ai-plan">
-          {/* Goal restatement */}
           <div className="ai-plan-goal">
             <span className="ai-plan-goal-label">Your goal</span>
             <p className="ai-plan-goal-text">{plan.goal}</p>
           </div>
 
-          {/* Habit cards */}
           <div className="ai-plan-habits-label">Recommended habits</div>
           <div className="ai-plan-habits">
             {plan.habits.map((habit, i) => {
               const isAdded = addedIndexes.has(i);
               return (
-                <div key={i} className={`ai-habit-card${isAdded ? ' ai-habit-card--added' : ''}`}>
+                <div
+                  key={i}
+                  className={`ai-habit-card${isAdded ? ' ai-habit-card--added' : ''}`}
+                >
                   <div className="ai-habit-card-top">
-                    <span className="ai-habit-emoji">{resolveEmoji(habit.emoji)}</span>
+                    <span className="ai-habit-emoji">
+                      {resolveEmoji(habit.emoji)}
+                    </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="ai-habit-name">{habit.name}</div>
                       <span className="ai-habit-freq">{habit.frequency}</span>
@@ -207,10 +212,7 @@ export function AiCoachView({
                       {isAdded ? '✓' : '+'}
                     </button>
                   </div>
-
                   <p className="ai-habit-why">{habit.why}</p>
-
-                  {/* Color strip at bottom */}
                   <div
                     className="ai-habit-color-strip"
                     style={{ background: colorFor(i) }}
@@ -220,13 +222,11 @@ export function AiCoachView({
             })}
           </div>
 
-          {/* Tip */}
           <div className="ai-plan-tip">
             <span className="ai-plan-tip-icon">💡</span>
             <p>{plan.tip}</p>
           </div>
 
-          {/* Add all button */}
           {!allAdded && notYetAdded.length > 0 && (
             <button
               className="ai-add-all-btn"
@@ -242,21 +242,17 @@ export function AiCoachView({
           {allAdded && (
             <div className="ai-all-added-msg">
               <span>🎉</span>
-              All habits added to your tracker! Head to Today to start building your streaks.
+              All habits added! Head to Today to start building your streaks.
             </div>
           )}
 
-          {/* Try again */}
-          <button
-            className="ai-try-again-btn"
-            onClick={onReset}
-          >
+          <button className="ai-try-again-btn" onClick={onReset}>
             ← Try a different goal
           </button>
         </div>
       )}
 
-      {/* ── Empty state (no plan yet, no error) ───────────────────────── */}
+      {/* Empty state */}
       {!plan && !loading && !error && (
         <div className="ai-coach-empty">
           <div className="ai-coach-empty-examples">

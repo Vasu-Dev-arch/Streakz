@@ -1,9 +1,15 @@
 import { useState, useCallback } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+// ── Environment ────────────────────────────────────────────────────────────────
+// Vite used import.meta.env.VITE_API_URL.
+// Next.js uses process.env.NEXT_PUBLIC_* (inlined at build time).
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
+
 const TOKEN_KEY = 'streaks_token';
 
 export function getToken() {
+  if (typeof window === 'undefined') return null;
   return localStorage.getItem(TOKEN_KEY);
 }
 
@@ -33,51 +39,58 @@ export function useAuth() {
   }, []);
 
   // ── Email / password ────────────────────────────────────────────────────────
-  const signup = useCallback(async ({ name, email, password }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Signup failed');
-      handleAuthResponse(data);
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [handleAuthResponse]);
+  const signup = useCallback(
+    async ({ name, email, password }) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Signup failed');
+        handleAuthResponse(data);
+      } catch (err) {
+        setError(err.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleAuthResponse]
+  );
 
-  const login = useCallback(async ({ email, password }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
-      handleAuthResponse(data);
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [handleAuthResponse]);
+  const login = useCallback(
+    async ({ email, password }) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+        handleAuthResponse(data);
+      } catch (err) {
+        setError(err.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleAuthResponse]
+  );
 
   // ── Google OAuth ────────────────────────────────────────────────────────────
   const loginWithGoogle = useCallback(() => {
     window.location.href = `${API_BASE}/api/auth/google`;
   }, []);
 
+  // searchParams can be a URLSearchParams object or a Next.js ReadonlyURLSearchParams
   const handleGoogleCallback = useCallback((searchParams) => {
     const token = searchParams.get('token');
     const err = searchParams.get('error');
@@ -102,41 +115,39 @@ export function useAuth() {
   }, []);
 
   // ── Profile updates ─────────────────────────────────────────────────────────
-  const updateProfile = useCallback(async ({ name, isFirstLogin: ifl, firstHabitPromptShown: fhps } = {}) => {
-    const tk = getToken();
-    const body = {};
-    if (name !== undefined) body.name = name;
-    if (ifl !== undefined) body.isFirstLogin = ifl;
-    if (fhps !== undefined) body.firstHabitPromptShown = fhps;
+  const updateProfile = useCallback(
+    async ({ name, isFirstLogin: ifl, firstHabitPromptShown: fhps } = {}) => {
+      const tk = getToken();
+      const body = {};
+      if (name !== undefined) body.name = name;
+      if (ifl !== undefined) body.isFirstLogin = ifl;
+      if (fhps !== undefined) body.firstHabitPromptShown = fhps;
 
-    const res = await fetch(`${API_BASE}/api/auth/profile`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(tk ? { Authorization: `Bearer ${tk}` } : {}),
-      },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to update profile');
+      const res = await fetch(`${API_BASE}/api/auth/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(tk ? { Authorization: `Bearer ${tk}` } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update profile');
 
-    setUser((prev) => ({ ...prev, ...data }));
-    if (data.isFirstLogin !== undefined) setIsFirstLogin(data.isFirstLogin);
-    if (data.firstHabitPromptShown !== undefined) setFirstHabitPromptShown(data.firstHabitPromptShown);
-    return data;
-  }, []);
+      setUser((prev) => ({ ...prev, ...data }));
+      if (data.isFirstLogin !== undefined) setIsFirstLogin(data.isFirstLogin);
+      if (data.firstHabitPromptShown !== undefined)
+        setFirstHabitPromptShown(data.firstHabitPromptShown);
+      return data;
+    },
+    []
+  );
 
-  /**
-   * Mark onboarding complete — sets isFirstLogin = false on backend.
-   */
   const completeOnboarding = useCallback(async () => {
     await updateProfile({ isFirstLogin: false });
     setIsFirstLogin(false);
   }, [updateProfile]);
 
-  /**
-   * Mark the first-habit prompt as shown — persisted to backend.
-   */
   const markFirstHabitPromptShown = useCallback(async () => {
     setFirstHabitPromptShown(true);
     try {
@@ -146,7 +157,7 @@ export function useAuth() {
     }
   }, [updateProfile]);
 
-  // ── Fetch current user from backend (used on app load) ──────────────────────
+  // ── Fetch current user ──────────────────────────────────────────────────────
   const fetchMe = useCallback(async () => {
     const tk = getToken();
     if (!tk) return;

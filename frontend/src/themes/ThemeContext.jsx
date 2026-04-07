@@ -1,96 +1,116 @@
+'use client';
+
 /**
  * Theme Context Provider
- * 
+ *
  * Manages theme state, persistence, and provides API for theme switching.
- * Supports localStorage persistence and future backend integration.
+ * Must be a Client Component — uses localStorage and window.matchMedia.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { builtInThemes, getThemeById, validateTheme, createCustomTheme, importTheme, exportTheme } from './themeConfig';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
+import {
+  builtInThemes,
+  validateTheme,
+  createCustomTheme,
+  importTheme,
+  exportTheme,
+} from './themeConfig';
 
-// Storage keys
 const STORAGE_KEYS = {
   THEME_ID: 'habit-tracker-theme-id',
   CUSTOM_THEMES: 'habit-tracker-custom-themes',
 };
 
-// Create context
 const ThemeContext = createContext(null);
 
-/**
- * ThemeProvider component
- * Wraps the application to provide theme functionality
- */
+function getCustomThemes() {
+  try {
+    if (typeof window === 'undefined') return {};
+    const saved = localStorage.getItem(STORAGE_KEYS.CUSTOM_THEMES);
+    return saved ? JSON.parse(saved) : {};
+  } catch {
+    return {};
+  }
+}
+
 export function ThemeProvider({ children }) {
-  const [currentThemeId, setCurrentThemeId] = useState(() => {
-    // Check localStorage for saved theme
+  // Initialise theme from localStorage on the client; default to 'dark'
+  // on the server (avoids SSR mismatch — the client effect corrects it).
+  const [currentThemeId, setCurrentThemeId] = useState('dark');
+  const [customThemes, setCustomThemes] = useState({});
+  const [mounted, setMounted] = useState(false);
+
+  // Run once after hydration to apply the persisted theme
+  useEffect(() => {
+    setMounted(true);
+
     const saved = localStorage.getItem(STORAGE_KEYS.THEME_ID);
-    if (saved && (builtInThemes[saved] || getCustomThemes()[saved])) {
-      return saved;
+    const allThemes = { ...builtInThemes, ...getCustomThemes() };
+
+    if (saved && allThemes[saved]) {
+      setCurrentThemeId(saved);
+    } else if (
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: light)').matches
+    ) {
+      setCurrentThemeId('light');
+    } else {
+      setCurrentThemeId('dark');
     }
-    
-    // Check system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
-    }
-    
-    return 'dark'; // Default theme
-  });
-  
-  const [customThemes, setCustomThemes] = useState(() => getCustomThemes());
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Get all available themes (built-in + custom)
-  const getAllThemes = useCallback(() => {
-    return { ...builtInThemes, ...customThemes };
-  }, [customThemes]);
+    setCustomThemes(getCustomThemes());
+  }, []);
 
-  // Get current theme object
-  const currentTheme = getAllThemes()[currentThemeId] || builtInThemes.dark;
+  const getAllThemes = useCallback(
+    () => ({ ...builtInThemes, ...customThemes }),
+    [customThemes]
+  );
 
-  // Apply theme to document
+  const currentTheme =
+    getAllThemes()[currentThemeId] || builtInThemes.dark;
+
   const applyTheme = useCallback((theme) => {
     if (!theme || !theme.colors) return;
-    
     const root = document.documentElement;
-    
-    // Apply all color tokens as CSS custom properties
     Object.entries(theme.colors).forEach(([key, value]) => {
       root.style.setProperty(`--theme-${key}`, value);
     });
-    
-    // Set theme metadata
     root.setAttribute('data-theme', theme.id);
     root.setAttribute('data-theme-name', theme.name);
-    
-    // Dispatch event for any listeners
     window.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
   }, []);
 
-  // Switch to a different theme
-  const setTheme = useCallback((themeId) => {
-    const theme = getAllThemes()[themeId];
-    if (!theme) {
-      console.error(`Theme "${themeId}" not found`);
-      return;
-    }
-    
-    setCurrentThemeId(themeId);
-    localStorage.setItem(STORAGE_KEYS.THEME_ID, themeId);
-    applyTheme(theme);
-  }, [getAllThemes, applyTheme]);
+  const setTheme = useCallback(
+    (themeId) => {
+      const theme = getAllThemes()[themeId];
+      if (!theme) {
+        console.error(`Theme "${themeId}" not found`);
+        return;
+      }
+      setCurrentThemeId(themeId);
+      localStorage.setItem(STORAGE_KEYS.THEME_ID, themeId);
+      applyTheme(theme);
+    },
+    [getAllThemes, applyTheme]
+  );
 
-  // Add a custom theme
   const addCustomTheme = useCallback((themeDefinition) => {
     try {
       const newTheme = createCustomTheme(themeDefinition);
-      
-      setCustomThemes(prev => {
+      setCustomThemes((prev) => {
         const updated = { ...prev, [newTheme.id]: newTheme };
-        localStorage.setItem(STORAGE_KEYS.CUSTOM_THEMES, JSON.stringify(updated));
+        localStorage.setItem(
+          STORAGE_KEYS.CUSTOM_THEMES,
+          JSON.stringify(updated)
+        );
         return updated;
       });
-      
       return newTheme;
     } catch (error) {
       console.error('Failed to add custom theme:', error);
@@ -98,123 +118,100 @@ export function ThemeProvider({ children }) {
     }
   }, []);
 
-  // Remove a custom theme
-  const removeCustomTheme = useCallback((themeId) => {
-    setCustomThemes(prev => {
-      const updated = { ...prev };
-      delete updated[themeId];
-      localStorage.setItem(STORAGE_KEYS.CUSTOM_THEMES, JSON.stringify(updated));
-      return updated;
-    });
-    
-    // If current theme was removed, switch to dark
-    if (currentThemeId === themeId) {
-      setTheme('dark');
-    }
-  }, [currentThemeId, setTheme]);
+  const removeCustomTheme = useCallback(
+    (themeId) => {
+      setCustomThemes((prev) => {
+        const updated = { ...prev };
+        delete updated[themeId];
+        localStorage.setItem(
+          STORAGE_KEYS.CUSTOM_THEMES,
+          JSON.stringify(updated)
+        );
+        return updated;
+      });
+      if (currentThemeId === themeId) setTheme('dark');
+    },
+    [currentThemeId, setTheme]
+  );
 
-  // Import a theme from JSON
-  const importThemeFromJson = useCallback((jsonString) => {
-    try {
-      const theme = importTheme(jsonString);
-      addCustomTheme(theme);
-      return theme;
-    } catch (error) {
-      console.error('Failed to import theme:', error);
-      throw error;
-    }
-  }, [addCustomTheme]);
+  const importThemeFromJson = useCallback(
+    (jsonString) => {
+      try {
+        const theme = importTheme(jsonString);
+        addCustomTheme(theme);
+        return theme;
+      } catch (error) {
+        console.error('Failed to import theme:', error);
+        throw error;
+      }
+    },
+    [addCustomTheme]
+  );
 
-  // Export a theme to JSON
-  const exportThemeToJson = useCallback((themeId) => {
-    const theme = getAllThemes()[themeId];
-    if (!theme) {
-      throw new Error(`Theme "${themeId}" not found`);
-    }
-    return exportTheme(theme);
-  }, [getAllThemes]);
+  const exportThemeToJson = useCallback(
+    (themeId) => {
+      const theme = getAllThemes()[themeId];
+      if (!theme) throw new Error(`Theme "${themeId}" not found`);
+      return exportTheme(theme);
+    },
+    [getAllThemes]
+  );
 
-  // Get system color scheme preference
   const getSystemPreference = useCallback(() => {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: light)').matches
+    ) {
       return 'light';
     }
     return 'dark';
   }, []);
 
-  // Listen for system preference changes
+  // Listen for OS-level colour scheme changes
   useEffect(() => {
+    if (!mounted) return;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
-    
     const handleChange = (e) => {
-      // Only auto-switch if user hasn't manually selected a theme
       const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME_ID);
-      if (!savedTheme) {
-        setTheme(e.matches ? 'light' : 'dark');
-      }
+      if (!savedTheme) setTheme(e.matches ? 'light' : 'dark');
     };
-    
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [setTheme]);
+  }, [mounted, setTheme]);
 
-  // Apply theme on mount and when theme changes
+  // Apply theme whenever it changes (including initial mount)
   useEffect(() => {
+    if (!mounted) return;
     applyTheme(currentTheme);
-  }, [currentTheme, applyTheme]);
+  }, [mounted, currentTheme, applyTheme]);
 
-  // Context value
   const value = {
-    // Current theme
     currentTheme,
     currentThemeId,
-    
-    // All themes
     themes: getAllThemes(),
     builtInThemes,
     customThemes,
-    
-    // Actions
     setTheme,
     addCustomTheme,
     removeCustomTheme,
     importTheme: importThemeFromJson,
     exportTheme: exportThemeToJson,
-    
-    // Utilities
     getSystemPreference,
-    isLoading,
+    isLoading: false,
   };
 
   return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 }
 
-/**
- * Hook to use theme context
- * @returns {Object} Theme context value
- */
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
-}
-
-/**
- * Helper to get custom themes from localStorage
- */
-function getCustomThemes() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEYS.CUSTOM_THEMES);
-    return saved ? JSON.parse(saved) : {};
-  } catch {
-    return {};
-  }
 }
 
 export default ThemeContext;
