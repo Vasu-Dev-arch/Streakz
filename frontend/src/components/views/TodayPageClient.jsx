@@ -18,6 +18,7 @@ export function TodayPageClient() {
     reminderTime,
     categories,
     toggleHabit,
+    toggleHabitForDate,
     onEditHabit,
     onDeleteHabit,
     updateDailyGoal,
@@ -33,6 +34,7 @@ export function TodayPageClient() {
       reminderTime={reminderTime}
       categories={categories}
       onToggleHabit={toggleHabit}
+      onToggleHabitForDate={toggleHabitForDate}
       onEditHabit={onEditHabit}
       onDeleteHabit={onDeleteHabit}
       onGoalChange={updateDailyGoal}

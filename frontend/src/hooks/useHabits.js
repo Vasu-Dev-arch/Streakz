@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getToken } from './useAuth';
-import { todayKey } from '../utils/dateUtils';
+import { todayKey, dateKey } from '../utils/dateUtils';
 import { DEFAULT_ICON_ID } from '../constants';
 
 // ── Environment ────────────────────────────────────────────────────────────────
@@ -43,6 +43,15 @@ function buildCompletionsMap(docs) {
     map[doc.date] = new Set(doc.habitIds);
   }
   return map;
+}
+
+/**
+ * Returns the YYYY-MM-DD key for N days ago (0 = today, 1 = yesterday, etc.)
+ */
+export function daysAgoKey(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return dateKey(d);
 }
 
 /**
@@ -148,6 +157,10 @@ export function useHabits(token) {
   }, []);
 
   // ── Completions ─────────────────────────────────────────────────────────────
+
+  /**
+   * Toggle completion for TODAY. Keeps the fast optimistic-update path.
+   */
   const toggleHabit = useCallback(async (id) => {
     const tk = todayKey();
 
@@ -177,6 +190,47 @@ export function useHabits(token) {
         const s = new Set(next[tk] ?? []);
         s.has(id) ? s.delete(id) : s.add(id);
         next[tk] = s;
+        return next;
+      });
+    }
+  }, []);
+
+  /**
+   * Toggle completion for a SPECIFIC DATE (today, yesterday, or day before).
+   * Uses the same /api/completions endpoint — no duplication.
+   * The backend enforces the allowed date window (max 2 days back).
+   *
+   * @param {string} habitId
+   * @param {string} date  YYYY-MM-DD
+   * @returns {Promise<void>}
+   */
+  const toggleHabitForDate = useCallback(async (habitId, date) => {
+    // Optimistic update
+    setCompletions((prev) => {
+      const next = { ...prev };
+      const s = new Set(next[date] ?? []);
+      s.has(habitId) ? s.delete(habitId) : s.add(habitId);
+      next[date] = s;
+      return next;
+    });
+
+    try {
+      const data = await apiFetch('/api/completions', {
+        method: 'POST',
+        body: JSON.stringify({ date, habitId }),
+      });
+      setCompletions((prev) => ({
+        ...prev,
+        [data.date]: new Set(data.habitIds),
+      }));
+    } catch (err) {
+      console.error('Failed to toggle completion for date:', err);
+      // Roll back optimistic update
+      setCompletions((prev) => {
+        const next = { ...prev };
+        const s = new Set(next[date] ?? []);
+        s.has(habitId) ? s.delete(habitId) : s.add(habitId);
+        next[date] = s;
         return next;
       });
     }
@@ -251,6 +305,7 @@ export function useHabits(token) {
     categories,
     loading,
     toggleHabit,
+    toggleHabitForDate,
     addHabit,
     updateHabit,
     deleteHabit,

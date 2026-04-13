@@ -14,6 +14,48 @@ export function assertDateString(date) {
   }
 }
 
+/**
+ * Assert that a date string is within the allowed past-completion window.
+ *
+ * Rules (product requirement):
+ *   - Today          → always allowed
+ *   - Yesterday      → allowed
+ *   - Day before     → allowed  (maxDaysBack = 2)
+ *   - Anything older → rejected with 400
+ *   - Future dates   → rejected with 400
+ *
+ * @param {string} date  YYYY-MM-DD already validated by assertDateString
+ * @param {number} [maxDaysBack=2]  how many days into the past are permitted
+ */
+export function assertAllowedPastDate(date, maxDaysBack = 2) {
+  // Build today's date at midnight in local time as a comparable YYYY-MM-DD string
+  const now = new Date();
+  const todayStr = _localDateKey(now);
+
+  // Build the earliest allowed date
+  const earliest = new Date(now);
+  earliest.setDate(now.getDate() - maxDaysBack);
+  const earliestStr = _localDateKey(earliest);
+
+  if (date > todayStr) {
+    throw new AppError('Cannot mark completions for future dates', 400);
+  }
+  if (date < earliestStr) {
+    throw new AppError(
+      `Can only mark completions up to ${maxDaysBack} days in the past`,
+      400
+    );
+  }
+}
+
+/** Produce a YYYY-MM-DD string from a Date using LOCAL time (matches client behaviour). */
+function _localDateKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function parseDailyGoal(value) {
   const n = Number(value);
   if (!Number.isFinite(n) || n < 1 || n > 20) {

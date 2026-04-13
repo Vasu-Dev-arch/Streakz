@@ -465,7 +465,7 @@ body {
     background 0.15s,
     transform 0.12s;
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* allow picker to overflow card bounds */
 }
 .habit-card:hover {
   border-color: var(--border2);
@@ -485,6 +485,7 @@ body {
   bottom: 0;
   width: 3px;
   background: var(--green);
+  border-radius: var(--radius) 0 0 var(--radius);
 }
 
 .habit-card-top {
@@ -618,6 +619,11 @@ body {
 .habit-action-btn--delete:hover {
   color: var(--red);
   background: color-mix(in srgb, var(--red) 10%, transparent);
+}
+/* Active state when the date picker is open */
+.habit-action-btn--active {
+  background: var(--accent-a15);
+  color: var(--accent2);
 }
 
 /* ── Analytics ─────────────────────────────────────────────────────────────── */
@@ -1557,6 +1563,141 @@ body {
   color: var(--text);
 }
 
+/* ── Past-date picker ──────────────────────────────────────────────────────── */
+/*
+ * Renders as an inline panel anchored to the bottom of the habit card's
+ * action row. position:absolute relative to .habit-card (which has
+ * position:relative and overflow:visible).
+ */
+.past-date-picker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 100;
+  min-width: 210px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 12px 10px;
+  box-shadow: 0 8px 28px var(--theme-shadowLg, rgba(0, 0, 0, 0.45));
+  animation: modalSlideUp 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Flip upward on short screens — if the panel would clip the top of the
+   viewport, CSS alone can't fix it, but this covers the common case. */
+@supports (anchor-name: --x) {
+  /* Progressive enhancement: anchor positioning (future CSS). */
+}
+
+.past-date-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.past-date-picker__title {
+  font-size: 10px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text3);
+  font-weight: 500;
+}
+
+.past-date-picker__close {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: background 0.12s, color 0.12s;
+}
+.past-date-picker__close:hover {
+  background: var(--bg4);
+  color: var(--text);
+}
+
+.past-date-picker__days {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.past-date-picker__day {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text2);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+  text-align: left;
+}
+.past-date-picker__day:hover {
+  background: var(--bg4);
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+/* Completed state — uses a CSS custom property set inline on the element */
+.past-date-picker__day--done {
+  border-color: color-mix(in srgb, var(--habit-color, var(--green)) 40%, transparent);
+  background: color-mix(in srgb, var(--habit-color, var(--green)) 9%, transparent);
+  color: var(--text);
+}
+.past-date-picker__day--done:hover {
+  background: color-mix(in srgb, var(--habit-color, var(--green)) 15%, transparent);
+}
+
+.past-date-picker__day-check {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.past-date-picker__day-label {
+  flex: 1;
+}
+
+/* "today" pill */
+.past-date-picker__day-tag {
+  font-size: 9px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--accent-a15);
+  color: var(--accent2);
+  white-space: nowrap;
+}
+
+.past-date-picker__hint {
+  font-size: 10px;
+  color: var(--text3);
+  font-family: var(--mono);
+  margin-top: 10px;
+  text-align: center;
+  line-height: 1.4;
+}
+
 /* ── Tablet ─────────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .stats-row {
@@ -1728,5 +1869,12 @@ body {
     width: 34px;
     height: 34px;
     font-size: 11px;
+  }
+
+  /* Past-date picker: on mobile, anchor to left edge instead of right */
+  .past-date-picker {
+    right: auto;
+    left: 0;
+    min-width: 190px;
   }
 }

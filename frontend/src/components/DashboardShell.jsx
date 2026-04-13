@@ -1,20 +1,5 @@
 'use client';
 
-/**
- * DashboardShell
- *
- * Replaces the old AuthenticatedApp component.
- * Responsibilities:
- *   - Auth guard: redirects to /auth when no token is present
- *   - Loads all habit data via useHabits
- *   - Renders the Sidebar + main-header shell
- *   - Provides HabitsContext to child pages
- *   - Manages overlay modals (HabitModal, ConfirmModal, FirstHabitPrompt)
- *
- * Navigation is now handled by Next.js router; the active "view" is derived
- * from the current pathname rather than a local state variable.
- */
-
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
@@ -27,11 +12,9 @@ import { useHabits } from '../hooks/useHabits';
 import { HabitsContext } from '../context/HabitsContext';
 import { DAYS, MONTHS } from '../constants';
 
-// Derive a simple view key from the pathname so the Sidebar can highlight
-// the correct item and the header can show the right title.
 function pathnameToView(pathname) {
   if (pathname === '/dashboard' || pathname === '/dashboard/') return 'today';
-  const seg = pathname.split('/')[2]; // e.g. "analytics"
+  const seg = pathname.split('/')[2];
   return seg ?? 'today';
 }
 
@@ -64,33 +47,22 @@ export function DashboardShell({ children }) {
     logout,
   } = useAuth();
 
-  // ── Auth guard ──────────────────────────────────────────────────────────────
-  // On the very first render token may still be null while localStorage is read.
-  // We use a "ready" flag so we don't flash a redirect before hydration.
   const [authReady, setAuthReady] = useState(false);
-
+  useEffect(() => { setAuthReady(true); }, []);
   useEffect(() => {
-    setAuthReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (authReady && !token) {
-      router.replace('/auth');
-    }
+    if (authReady && !token) router.replace('/auth');
   }, [authReady, token, router]);
 
-  // ── Modal state ─────────────────────────────────────────────────────────────
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState(null);
 
-  // ── First-habit prompt ──────────────────────────────────────────────────────
   const [showFirstHabitPrompt, setShowFirstHabitPrompt] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const promptTimerRef = useRef(null);
 
-  // ── AI Coach state (persists across navigations inside the shell) ───────────
+  // AI Coach persisted state
   const [aiCoachGoal, setAiCoachGoal] = useState('');
   const [aiCoachPlan, setAiCoachPlan] = useState(null);
   const [aiCoachLoading, setAiCoachLoading] = useState(false);
@@ -99,7 +71,6 @@ export function DashboardShell({ children }) {
   const [aiCoachAddingAll, setAiCoachAddingAll] = useState(false);
   const [aiCoachAllAdded, setAiCoachAllAdded] = useState(false);
 
-  // ── Habits data ─────────────────────────────────────────────────────────────
   const {
     habits,
     completions,
@@ -108,6 +79,7 @@ export function DashboardShell({ children }) {
     categories,
     loading,
     toggleHabit,
+    toggleHabitForDate,
     addHabit,
     updateHabit,
     deleteHabit,
@@ -116,38 +88,28 @@ export function DashboardShell({ children }) {
     addCategory,
   } = useHabits(token);
 
-  // ── Keyboard / scroll side-effects ─────────────────────────────────────────
   useEffect(() => {
-    function onKey(e) {
-      if (e.key === 'Escape') setSidebarOpen(false);
-    }
+    function onKey(e) { if (e.key === 'Escape') setSidebarOpen(false); }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
   useEffect(() => {
     document.body.style.overflow = sidebarOpen ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
+    return () => { document.body.style.overflow = ''; };
   }, [sidebarOpen]);
 
-  // ── localStorage dontShowAgain (client-only) ────────────────────────────────
   useEffect(() => {
     setDontShowAgain(
       localStorage.getItem('firstHabitPromptDismissed') === 'true'
     );
   }, []);
 
-  // ── First-habit prompt trigger ──────────────────────────────────────────────
   useEffect(() => {
     if (loading) return;
     if (dontShowAgain) return;
     if (!firstHabitPromptShown && habits.length === 0) {
-      promptTimerRef.current = setTimeout(
-        () => setShowFirstHabitPrompt(true),
-        600
-      );
+      promptTimerRef.current = setTimeout(() => setShowFirstHabitPrompt(true), 600);
     }
     return () => clearTimeout(promptTimerRef.current);
   }, [firstHabitPromptShown, habits.length, loading, dontShowAgain]);
@@ -158,39 +120,24 @@ export function DashboardShell({ children }) {
     }
   }, [habits.length, firstHabitPromptShown, markFirstHabitPromptShown]);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
-  const handleAddHabit = () => {
-    setEditingHabit(null);
-    setIsModalOpen(true);
-  };
+  const handleAddHabit = () => { setEditingHabit(null); setIsModalOpen(true); };
 
   const handleEditHabit = (id) => {
     const habit = habits.find((h) => h.id === id);
-    if (habit) {
-      setEditingHabit(habit);
-      setIsModalOpen(true);
-    }
+    if (habit) { setEditingHabit(habit); setIsModalOpen(true); }
   };
 
   const handleSaveHabit = async (habitData) => {
     try {
-      if (editingHabit) {
-        await updateHabit(editingHabit.id, habitData);
-      } else {
-        await addHabit(habitData);
-      }
+      if (editingHabit) { await updateHabit(editingHabit.id, habitData); }
+      else { await addHabit(habitData); }
       setIsModalOpen(false);
       setEditingHabit(null);
-    } catch {
-      /* errors logged in useHabits */
-    }
+    } catch { /* logged in useHabits */ }
   };
 
   const confirmDeleteHabit = () => {
-    if (habitToDelete) {
-      deleteHabit(habitToDelete);
-      setHabitToDelete(null);
-    }
+    if (habitToDelete) { deleteHabit(habitToDelete); setHabitToDelete(null); }
   };
 
   const handleDismissFirstHabitPrompt = async () => {
@@ -213,11 +160,7 @@ export function DashboardShell({ children }) {
   };
 
   const handleAddCategory = async (name) => {
-    try {
-      await addCategory(name);
-    } catch {
-      /* logged in useHabits */
-    }
+    try { await addCategory(name); } catch { /* logged */ }
   };
 
   const resetAiCoachState = () => {
@@ -228,7 +171,6 @@ export function DashboardShell({ children }) {
     setAiCoachError(null);
   };
 
-  // ── View helpers ────────────────────────────────────────────────────────────
   const activeView = pathnameToView(pathname);
 
   const VIEW_TITLES = {
@@ -245,11 +187,9 @@ export function DashboardShell({ children }) {
   };
 
   const handleViewChange = (view) => {
-    const path = view === 'today' ? '/dashboard' : `/dashboard/${view}`;
-    router.push(path);
+    router.push(view === 'today' ? '/dashboard' : `/dashboard/${view}`);
   };
 
-  // ── Context value passed to child pages ─────────────────────────────────────
   const habitsContextValue = {
     habits,
     completions,
@@ -258,6 +198,7 @@ export function DashboardShell({ children }) {
     categories,
     loading,
     toggleHabit,
+    toggleHabitForDate,          // ← new
     addHabit,
     updateHabit,
     deleteHabit,
@@ -268,30 +209,21 @@ export function DashboardShell({ children }) {
     onDeleteHabit: (id) => setHabitToDelete(id),
     onNavigateToAiCoach: () => router.push('/dashboard/ai-coach'),
     // AI Coach state
-    aiCoachGoal,
-    setAiCoachGoal,
-    aiCoachPlan,
-    setAiCoachPlan,
-    aiCoachLoading,
-    setAiCoachLoading,
-    aiCoachError,
-    setAiCoachError,
-    aiCoachAddedIndexes,
-    setAiCoachAddedIndexes,
-    aiCoachAddingAll,
-    setAiCoachAddingAll,
-    aiCoachAllAdded,
-    setAiCoachAllAdded,
+    aiCoachGoal, setAiCoachGoal,
+    aiCoachPlan, setAiCoachPlan,
+    aiCoachLoading, setAiCoachLoading,
+    aiCoachError, setAiCoachError,
+    aiCoachAddedIndexes, setAiCoachAddedIndexes,
+    aiCoachAddingAll, setAiCoachAddingAll,
+    aiCoachAllAdded, setAiCoachAllAdded,
     resetAiCoachState,
   };
 
-  // Don't render the shell at all until we know auth state
   if (!authReady) return null;
-  if (!token) return null; // router.replace('/auth') is in flight
+  if (!token) return null;
 
   return (
     <div className="app">
-      {/* Mobile sidebar overlay */}
       <div
         className={`sidebar-overlay${sidebarOpen ? ' sidebar--open' : ''}`}
         onClick={() => setSidebarOpen(false)}
@@ -303,81 +235,62 @@ export function DashboardShell({ children }) {
         completions={completions}
         activeView={activeView}
         onViewChange={handleViewChange}
-        onAddHabit={() => {
-          handleAddHabit();
-        }}
+        onAddHabit={handleAddHabit}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="main">
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <header className="main-header" role="banner">
+      <main className="main">
+        <div className="main-header">
           <div className="header-left">
             <button
               className="hamburger"
               onClick={() => setSidebarOpen(true)}
-              aria-label="Open navigation menu"
+              aria-label="Open menu"
             >
               <HamburgerIcon />
             </button>
             <div className="header-title-block">
-              <h1 className="main-title">
-                {VIEW_TITLES[activeView] ?? 'Today'}
-              </h1>
-              <time className="main-date" dateTime={new Date().toISOString()}>{getFormattedDate()}</time>
+              <div className="main-title">{VIEW_TITLES[activeView] ?? 'Today'}</div>
+              <div className="main-date">{getFormattedDate()}</div>
             </div>
           </div>
 
-          <div className="header-actions" role="navigation" aria-label="Actions">
+          <div className="header-actions">
             <button
               className={`btn-sm ai-coach-header-btn${activeView === 'ai-coach' ? ' active' : ''}`}
               onClick={() => router.push('/dashboard/ai-coach')}
               title="AI Habit Coach"
-              aria-label="Open AI Habit Coach"
               style={
                 activeView === 'ai-coach'
-                  ? {
-                      color: 'var(--accent2)',
-                      borderColor: 'rgba(124,106,247,0.4)',
-                    }
+                  ? { color: 'var(--accent2)', borderColor: 'rgba(124,106,247,0.4)' }
                   : {}
               }
             >
               ✦ AI Coach
             </button>
-            <button className="btn-sm" onClick={handleAddHabit} aria-label="Add new habit">
-              + New Habit
-            </button>
+            <button className="btn-sm" onClick={handleAddHabit}>+ New Habit</button>
             <ProfileMenu
               user={user}
               onSettings={() => router.push('/dashboard/settings')}
-              onLogout={() => {
-                logout();
-                router.replace('/auth');
-              }}
+              onLogout={() => { logout(); router.replace('/auth'); }}
             />
           </div>
-        </header>
+        </div>
 
-        {/* ── Page content injected here via Next.js layout system ────────── */}
         <div className="content-area">
           <HabitsContext.Provider value={habitsContextValue}>
             {children}
           </HabitsContext.Provider>
         </div>
-      </div>
+      </main>
 
-      {/* ── Overlay modals ─────────────────────────────────────────────────── */}
       <HabitModal
         isOpen={isModalOpen}
         habit={editingHabit}
         categories={categories}
         onSave={handleSaveHabit}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingHabit(null);
-        }}
+        onClose={() => { setIsModalOpen(false); setEditingHabit(null); }}
         onAddCategory={handleAddCategory}
       />
 

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+'use client';
+
+import { useState } from 'react';
 import { StatsRow } from './StatsRow';
 import { HabitCard } from './HabitCard';
 import { CategoryFilter } from './CategoryFilter';
@@ -13,6 +15,7 @@ export function TodayView({
   reminderTime,
   categories,
   onToggleHabit,
+  onToggleHabitForDate,
   onEditHabit,
   onDeleteHabit,
   onGoalChange,
@@ -22,9 +25,10 @@ export function TodayView({
   const [activeCategory, setActiveCategory] = useState('All');
   const tk = todayKey();
 
-  const filteredHabits = activeCategory === 'All'
-    ? habits
-    : habits.filter(h => h.category === activeCategory);
+  const filteredHabits =
+    activeCategory === 'All'
+      ? habits
+      : habits.filter((h) => h.category === activeCategory);
 
   const done = filteredHabits.filter((h) => completions[tk]?.has(h.id)).length;
 
@@ -49,7 +53,13 @@ export function TodayView({
 
       <div className="section-header">
         <span className="section-title">Habits</span>
-        <span style={{ fontSize: '12px', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
+        <span
+          style={{
+            fontSize: '12px',
+            color: 'var(--text3)',
+            fontFamily: 'var(--mono)',
+          }}
+        >
           {done} / {filteredHabits.length} complete
         </span>
       </div>
@@ -65,14 +75,15 @@ export function TodayView({
           <div className="empty-state" style={{ gridColumn: '1/-1' }}>
             <div className="empty-icon">🌱</div>
             <div className="empty-text">
-              {habits.length === 0 ? 'No habits yet' : 'No habits in this category'}
+              {habits.length === 0
+                ? 'No habits yet'
+                : 'No habits in this category'}
             </div>
             <div className="empty-sub">
               {habits.length === 0
                 ? 'Add your first habit to get started'
                 : 'Switch category or add a new habit'}
             </div>
-            {/* AI Coach entry point — shown when there are no habits at all */}
             {habits.length === 0 && onNavigateToAiCoach && (
               <button
                 className="ai-coach-entry-btn"
@@ -90,6 +101,7 @@ export function TodayView({
               habit={habit}
               completions={completions}
               onToggle={onToggleHabit}
+              onToggleForDate={onToggleHabitForDate}
               onEdit={onEditHabit}
               onDelete={onDeleteHabit}
             />
