@@ -87,6 +87,20 @@ body {
   z-index: 200;
 }
 
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 3px;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--text3);
+}
+
 .sidebar-logo {
   padding: 0 20px 24px;
   border-bottom: 1px solid var(--border);
@@ -194,11 +208,19 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 0 12px;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
 .habit-sidebar-list::-webkit-scrollbar {
-  display: none;
+  width: 6px;
+}
+.habit-sidebar-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.habit-sidebar-list::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 3px;
+}
+.habit-sidebar-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text3);
 }
 .habit-sidebar-item {
   display: flex;

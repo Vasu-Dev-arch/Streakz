@@ -7,14 +7,22 @@
  * then renders the existing SettingsView.
  */
 
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useHabitsContext } from '../../context/HabitsContext';
 import { useAuth } from '../../hooks/useAuth';
 import { SettingsView } from '../SettingsView';
 
 export function SettingsPageClient() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, fetchMe } = useAuth();
+  const fetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (!user && !fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchMe();
+    }
+  }, [user, fetchMe]);
 
   const handleLogout = () => {
     logout();

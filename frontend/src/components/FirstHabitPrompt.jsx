@@ -62,7 +62,7 @@ export function FirstHabitPrompt({ isOpen, onAddHabit, onLater, onDontShowAgain 
           fontSize: '14px', color: 'var(--text2)', lineHeight: 1.7,
           marginBottom: '28px', fontFamily: 'var(--sans)',
         }}>
-          The hardest part is beginning. Add one habit to track and we'll help you build momentum from there.
+          The hardest part is beginning. Add one habit to track and we&apos;ll help you build momentum from there.
         </p>
 
         {/* Suggestion chips */}
@@ -124,7 +124,7 @@ export function FirstHabitPrompt({ isOpen, onAddHabit, onLater, onDontShowAgain 
             textDecoration: 'underline',
           }}
         >
-          Don't show again
+          Don&apos;t show again
         </button>
       </div>
     </div>

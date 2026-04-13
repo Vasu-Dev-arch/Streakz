@@ -294,7 +294,7 @@ export function OnboardingPage({ onFinish }) {
           </div>
 
           <h1 style={styles.mainTitle}>Everything you need to build lasting habits</h1>
-          <p style={styles.mainSub}>Here's what's waiting for you inside.</p>
+          <p style={styles.mainSub}>Here&apos;s what&apos;s waiting for you inside.</p>
 
           {/* 2×2 feature grid */}
           <div style={styles.grid}>

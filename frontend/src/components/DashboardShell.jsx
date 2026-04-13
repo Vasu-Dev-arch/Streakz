@@ -310,30 +310,31 @@ export function DashboardShell({ children }) {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <main className="main">
+      <div className="main">
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <div className="main-header">
+        <header className="main-header" role="banner">
           <div className="header-left">
             <button
               className="hamburger"
               onClick={() => setSidebarOpen(true)}
-              aria-label="Open menu"
+              aria-label="Open navigation menu"
             >
               <HamburgerIcon />
             </button>
             <div className="header-title-block">
-              <div className="main-title">
+              <h1 className="main-title">
                 {VIEW_TITLES[activeView] ?? 'Today'}
-              </div>
-              <div className="main-date">{getFormattedDate()}</div>
+              </h1>
+              <time className="main-date" dateTime={new Date().toISOString()}>{getFormattedDate()}</time>
             </div>
           </div>
 
-          <div className="header-actions">
+          <div className="header-actions" role="navigation" aria-label="Actions">
             <button
               className={`btn-sm ai-coach-header-btn${activeView === 'ai-coach' ? ' active' : ''}`}
               onClick={() => router.push('/dashboard/ai-coach')}
               title="AI Habit Coach"
+              aria-label="Open AI Habit Coach"
               style={
                 activeView === 'ai-coach'
                   ? {
@@ -345,7 +346,7 @@ export function DashboardShell({ children }) {
             >
               ✦ AI Coach
             </button>
-            <button className="btn-sm" onClick={handleAddHabit}>
+            <button className="btn-sm" onClick={handleAddHabit} aria-label="Add new habit">
               + New Habit
             </button>
             <ProfileMenu
@@ -357,7 +358,7 @@ export function DashboardShell({ children }) {
               }}
             />
           </div>
-        </div>
+        </header>
 
         {/* ── Page content injected here via Next.js layout system ────────── */}
         <div className="content-area">
@@ -365,7 +366,7 @@ export function DashboardShell({ children }) {
             {children}
           </HabitsContext.Provider>
         </div>
-      </main>
+      </div>
 
       {/* ── Overlay modals ─────────────────────────────────────────────────── */}
       <HabitModal

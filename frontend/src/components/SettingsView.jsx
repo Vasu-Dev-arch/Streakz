@@ -8,7 +8,7 @@
  *   - Added 'use client' directive
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeSelector } from './ThemeSelector';
 import './SettingsView.css';
 
@@ -20,6 +20,10 @@ export function SettingsView({ user, logout }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (user?.name) setEditName(user.name);
+  }, [user]);
 
   const sections = [
     { id: 'general', label: 'General', icon: '⚙️' },
@@ -45,7 +49,7 @@ export function SettingsView({ user, logout }) {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.name) user.name = data.name;
+        if (data.name && user) user.name = data.name;
         setIsEditingName(false);
       }
     } catch (err) {
