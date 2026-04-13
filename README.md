@@ -191,8 +191,12 @@ npm run dev
 
 ## Author
 
-**Vasu (Cap)**
-Full-Stack & AI Engineer
+**Vasudevan**  
+Full-Stack & AI Engineer 
+
+[Github](https://github.com/Vasu-Dev-arch) | 
+[LinkedIn](https://linkedin.com/in/vasudevan-j) | 
+[Portfolio](https://vasu-dev-arch.github.io/New-Portfolio)
 
 ---
 
