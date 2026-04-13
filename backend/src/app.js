@@ -11,9 +11,10 @@ import { errorHandler } from './middleware/errorHandler.js';
 const app = express();
 
 const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'https://streakz-six.vercel.app',
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "https://streakz-six.vercel.app",
+  process.env.CLIENT_ORIGIN
 ];
 
 app.use(
