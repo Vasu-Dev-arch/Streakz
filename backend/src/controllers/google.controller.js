@@ -49,7 +49,7 @@ export function redirectToGoogle(_req, res) {
 }
 
 export async function handleGoogleCallback(req, res) {
-  const frontendUrl = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  const frontendUrl = process.env.CLIENT_ORIGIN || 'http://localhost:3000';
   const failureRedirect = (msg) =>
     res.redirect(`${frontendUrl}/auth/callback?error=${encodeURIComponent(msg)}`);
 
