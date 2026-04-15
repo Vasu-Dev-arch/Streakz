@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 // ── Environment ────────────────────────────────────────────────────────────────
 // Vite used import.meta.env.VITE_API_URL.
@@ -7,6 +7,12 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 
 const TOKEN_KEY = 'streaks_token';
+
+export function getAuthRedirectPath({ name, isFirstLogin }) {
+  if (!name) return '/welcome';
+  if (isFirstLogin) return '/onboarding';
+  return '/dashboard';
+}
 
 export function getToken() {
   if (typeof window === 'undefined') return null;
@@ -95,6 +101,9 @@ export function useAuth() {
     const token = searchParams.get('token');
     const err = searchParams.get('error');
     const firstLogin = searchParams.get('isFirstLogin') === 'true';
+    const name = searchParams.get('name') || undefined;
+    const promptShownParam = searchParams.get('firstHabitPromptShown');
+    const firstHabitPrompt = promptShownParam === 'true';
 
     if (err) {
       setError(decodeURIComponent(err));
@@ -105,9 +114,14 @@ export function useAuth() {
       setToken(token);
       setTokenState(token);
       setIsFirstLogin(firstLogin);
-      setFirstHabitPromptShown(false);
+      setFirstHabitPromptShown(firstHabitPrompt);
       setError(null);
-      return { ok: true, isFirstLogin: firstLogin };
+      return {
+        ok: true,
+        isFirstLogin: firstLogin,
+        name,
+        firstHabitPromptShown: firstHabitPrompt,
+      };
     }
 
     setError('No token received from Google');
@@ -174,6 +188,11 @@ export function useAuth() {
       // silently fail
     }
   }, []);
+
+  useEffect(() => {
+    if (!token || user !== null) return;
+    fetchMe();
+  }, [token, user, fetchMe]);
 
   // ── Logout ──────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {

@@ -20,14 +20,7 @@ function pathnameToView(pathname) {
 
 function HamburgerIcon() {
   return (
-    <svg
-      width="18"
-      height="18"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
       <line x1="3" y1="6" x2="21" y2="6" strokeLinecap="round" />
       <line x1="3" y1="12" x2="21" y2="12" strokeLinecap="round" />
       <line x1="3" y1="18" x2="21" y2="18" strokeLinecap="round" />
@@ -47,8 +40,11 @@ export function DashboardShell({ children }) {
     logout,
   } = useAuth();
 
+  // Tracks whether the component has mounted (avoids SSR mismatch on token read)
   const [authReady, setAuthReady] = useState(false);
   useEffect(() => { setAuthReady(true); }, []);
+
+  // Redirect to auth if not logged in
   useEffect(() => {
     if (authReady && !token) router.replace('/auth');
   }, [authReady, token, router]);
@@ -57,9 +53,7 @@ export function DashboardShell({ children }) {
   const [editingHabit, setEditingHabit] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState(null);
-
   const [showFirstHabitPrompt, setShowFirstHabitPrompt] = useState(false);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
   const promptTimerRef = useRef(null);
 
   // AI Coach persisted state
@@ -88,31 +82,28 @@ export function DashboardShell({ children }) {
     addCategory,
   } = useHabits(token);
 
+  // Close sidebar on Escape
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') setSidebarOpen(false); }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  // Prevent body scroll when sidebar is open (mobile drawer)
   useEffect(() => {
     document.body.style.overflow = sidebarOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [sidebarOpen]);
 
   useEffect(() => {
-    setDontShowAgain(
-      localStorage.getItem('firstHabitPromptDismissed') === 'true'
-    );
-  }, []);
-
-  useEffect(() => {
+    clearTimeout(promptTimerRef.current);
+    if (token && user === null) return;
     if (loading) return;
-    if (dontShowAgain) return;
-    if (!firstHabitPromptShown && habits.length === 0) {
-      promptTimerRef.current = setTimeout(() => setShowFirstHabitPrompt(true), 600);
-    }
+    if (firstHabitPromptShown) return;
+    if (habits.length > 0) return;
+    promptTimerRef.current = setTimeout(() => setShowFirstHabitPrompt(true), 600);
     return () => clearTimeout(promptTimerRef.current);
-  }, [firstHabitPromptShown, habits.length, loading, dontShowAgain]);
+  }, [loading, firstHabitPromptShown, habits.length, token, user]);
 
   useEffect(() => {
     if (habits.length > 0 && !firstHabitPromptShown) {
@@ -120,6 +111,9 @@ export function DashboardShell({ children }) {
     }
   }, [habits.length, firstHabitPromptShown, markFirstHabitPromptShown]);
 
+  useEffect(() => () => clearTimeout(promptTimerRef.current), []);
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleAddHabit = () => { setEditingHabit(null); setIsModalOpen(true); };
 
   const handleEditHabit = (id) => {
@@ -145,13 +139,6 @@ export function DashboardShell({ children }) {
     await markFirstHabitPromptShown();
   };
 
-  const handleDontShowAgain = async () => {
-    setShowFirstHabitPrompt(false);
-    setDontShowAgain(true);
-    localStorage.setItem('firstHabitPromptDismissed', 'true');
-    await markFirstHabitPromptShown();
-  };
-
   const handleFirstHabitAdd = async () => {
     setShowFirstHabitPrompt(false);
     await markFirstHabitPromptShown();
@@ -171,12 +158,15 @@ export function DashboardShell({ children }) {
     setAiCoachError(null);
   };
 
+  // ── Routing helpers ──────────────────────────────────────────────────────────
   const activeView = pathnameToView(pathname);
 
   const VIEW_TITLES = {
     today: 'Today',
     analytics: 'Analytics',
     heatmap: 'Heatmap',
+    goals: 'Goals',
+    journal: 'Journal',
     'ai-coach': 'AI Coach',
     settings: 'Settings',
   };
@@ -190,6 +180,7 @@ export function DashboardShell({ children }) {
     router.push(view === 'today' ? '/dashboard' : `/dashboard/${view}`);
   };
 
+  // ── Context value ────────────────────────────────────────────────────────────
   const habitsContextValue = {
     habits,
     completions,
@@ -198,7 +189,7 @@ export function DashboardShell({ children }) {
     categories,
     loading,
     toggleHabit,
-    toggleHabitForDate,          // ← new
+    toggleHabitForDate,
     addHabit,
     updateHabit,
     deleteHabit,
@@ -261,11 +252,7 @@ export function DashboardShell({ children }) {
               className={`btn-sm ai-coach-header-btn${activeView === 'ai-coach' ? ' active' : ''}`}
               onClick={() => router.push('/dashboard/ai-coach')}
               title="AI Habit Coach"
-              style={
-                activeView === 'ai-coach'
-                  ? { color: 'var(--accent2)', borderColor: 'rgba(124,106,247,0.4)' }
-                  : {}
-              }
+              style={activeView === 'ai-coach' ? { color: 'var(--accent2)', borderColor: 'rgba(124,106,247,0.4)' } : {}}
             >
               ✦ AI Coach
             </button>
@@ -306,7 +293,6 @@ export function DashboardShell({ children }) {
         isOpen={showFirstHabitPrompt}
         onAddHabit={handleFirstHabitAdd}
         onLater={handleDismissFirstHabitPrompt}
-        onDontShowAgain={handleDontShowAgain}
       />
     </div>
   );

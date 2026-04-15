@@ -65,44 +65,44 @@ body {
 }
 
 /* ── App shell ─────────────────────────────────────────────────────────────── */
+/*
+ * .sidebar is position:fixed (out of normal flow), so the app shell
+ * must NOT use a 2-column grid — that would create a ghost 260px column
+ * that pushes .main off-screen on desktop while showing nothing.
+ * A simple block container is correct: .main handles its own left margin.
+ */
 .app {
-  display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr;
+  display: block;
   min-height: 100vh;
 }
 
 /* ── Sidebar ───────────────────────────────────────────────────────────────── */
+/*
+ * Fixed vertical layout: logo + nav are always visible; only the
+ * "My Habits" list scrolls. The "Add Habit" button is pinned to the bottom.
+ */
 .sidebar {
   background: var(--bg2);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  padding: 24px 0;
-  position: sticky;
+  /* Fixed so the sidebar never moves while the main content scrolls */
+  position: fixed;
   top: 0;
+  left: 0;
+  width: var(--sidebar-w);
   height: 100vh;
-  overflow-y: auto;
+  /* No overflow on the sidebar itself — only .sidebar-main scrolls */
+  overflow: hidden;
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
   z-index: 200;
 }
 
-.sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-.sidebar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.sidebar::-webkit-scrollbar-thumb {
-  background: var(--border2);
-  border-radius: 3px;
-}
-.sidebar::-webkit-scrollbar-thumb:hover {
-  background: var(--text3);
-}
-
 .sidebar-logo {
-  padding: 0 20px 24px;
+  /* Static — never scrolls */
+  flex-shrink: 0;
+  padding: 24px 20px 20px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 16px;
 }
@@ -119,6 +119,11 @@ body {
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-top: 2px;
+}
+
+/* Primary nav wrapper — static */
+.sidebar > nav:first-of-type {
+  flex-shrink: 0;
 }
 
 .sidebar-close-btn {
@@ -156,7 +161,7 @@ body {
 .nav-list {
   list-style: none;
   padding: 0 12px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .nav-item {
@@ -204,23 +209,42 @@ body {
   flex-shrink: 0;
 }
 
+/*
+ * "My Habits" scrollable section.
+ * Takes all remaining vertical space, scrolls independently,
+ * scrollbar hidden visually but functional.
+ */
+.sidebar-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .habit-sidebar-list {
   flex: 1;
   overflow-y: auto;
   padding: 0 12px;
+  /* Hide scrollbar visually — preserve scroll functionality */
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
 }
 .habit-sidebar-list::-webkit-scrollbar {
-  width: 6px;
+  display: none;               /* Chrome/Safari */
 }
-.habit-sidebar-list::-webkit-scrollbar-track {
-  background: transparent;
+
+/* Footer — always pinned to the bottom */
+.sidebar-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
 }
-.habit-sidebar-list::-webkit-scrollbar-thumb {
-  background: var(--border2);
-  border-radius: 3px;
-}
-.habit-sidebar-list::-webkit-scrollbar-thumb:hover {
-  background: var(--text3);
+
+.sidebar-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 0 16px;
 }
 .habit-sidebar-item {
   display: flex;
@@ -256,7 +280,6 @@ body {
 }
 
 .sidebar-btn {
-  margin: 12px;
   padding: 11px 16px;
   border-radius: var(--radius-sm);
   background: var(--accent-a12, var(--accent-a10));
@@ -267,7 +290,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
-  width: calc(100% - 24px);
+  width: 100%;
   min-height: 44px;
 }
 .sidebar-btn:hover {
@@ -292,9 +315,14 @@ body {
 }
 
 /* ── Main ──────────────────────────────────────────────────────────────────── */
+/*
+ * Left margin equals the fixed sidebar width so content is never obscured.
+ */
 .main {
+  margin-left: var(--sidebar-w);
   overflow-y: auto;
   min-width: 0;
+  min-height: 100vh;
 }
 
 .main-header {
@@ -1564,11 +1592,6 @@ body {
 }
 
 /* ── Past-date picker ──────────────────────────────────────────────────────── */
-/*
- * Renders as an inline panel anchored to the bottom of the habit card's
- * action row. position:absolute relative to .habit-card (which has
- * position:relative and overflow:visible).
- */
 .past-date-picker {
   position: absolute;
   bottom: calc(100% + 8px);
@@ -1581,12 +1604,6 @@ body {
   padding: 12px 12px 10px;
   box-shadow: 0 8px 28px var(--theme-shadowLg, rgba(0, 0, 0, 0.45));
   animation: modalSlideUp 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Flip upward on short screens — if the panel would clip the top of the
-   viewport, CSS alone can't fix it, but this covers the common case. */
-@supports (anchor-name: --x) {
-  /* Progressive enhancement: anchor positioning (future CSS). */
 }
 
 .past-date-picker__header {
@@ -1653,7 +1670,6 @@ body {
   color: var(--text);
 }
 
-/* Completed state — uses a CSS custom property set inline on the element */
 .past-date-picker__day--done {
   border-color: color-mix(in srgb, var(--habit-color, var(--green)) 40%, transparent);
   background: color-mix(in srgb, var(--habit-color, var(--green)) 9%, transparent);
@@ -1676,7 +1692,6 @@ body {
   flex: 1;
 }
 
-/* "today" pill */
 .past-date-picker__day-tag {
   font-size: 9px;
   font-family: var(--mono);
@@ -1698,6 +1713,193 @@ body {
   line-height: 1.4;
 }
 
+/* ── Journal ───────────────────────────────────────────────────────────────── */
+.journal-view {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.journal-date-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.journal-date-tab {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  min-height: 36px;
+}
+.journal-date-tab:hover {
+  background: var(--bg4);
+  color: var(--text);
+}
+.journal-date-tab.active {
+  background: var(--accent-a15);
+  border-color: var(--accent-a40);
+  color: var(--accent2);
+}
+
+.journal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.journal-title-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 18px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.journal-title-input:focus {
+  border-color: var(--accent);
+}
+.journal-title-input::placeholder {
+  color: var(--text3);
+  font-weight: 400;
+}
+
+.journal-content-input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.7;
+  outline: none;
+  resize: vertical;
+  min-height: 280px;
+  transition: border-color 0.15s;
+}
+.journal-content-input:focus {
+  border-color: var(--accent);
+}
+.journal-content-input::placeholder {
+  color: var(--text3);
+}
+
+.journal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.journal-save-btn {
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  min-height: 40px;
+}
+.journal-save-btn:hover:not(:disabled) {
+  background: var(--accent2);
+}
+.journal-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.journal-status {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text3);
+}
+.journal-status--saved {
+  color: var(--green);
+}
+.journal-status--error {
+  color: var(--red);
+}
+
+.journal-history {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.journal-history__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.journal-history__empty {
+  color: var(--text3);
+  font-size: 14px;
+}
+.journal-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.journal-history__item {
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  overflow: hidden;
+}
+.journal-history__toggle {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  cursor: pointer;
+}
+.journal-history__toggle:hover {
+  background: var(--bg3);
+}
+.journal-history__date {
+  font-size: 13px;
+  color: var(--text3);
+}
+.journal-history__preview {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.journal-history__content {
+  padding: 0 16px 16px;
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.journal-history__toggle.expanded {
+  background: var(--bg3);
+}
+
 /* ── Tablet ─────────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .stats-row {
@@ -1714,6 +1916,7 @@ body {
     grid-template-columns: 1fr;
   }
 
+  /* On mobile the sidebar is a drawer — position fixed, slides in from left */
   .sidebar {
     position: fixed;
     top: 0;
@@ -1734,6 +1937,11 @@ body {
   }
   .hamburger {
     display: flex;
+  }
+
+  /* Main takes full width — no left margin needed on mobile */
+  .main {
+    margin-left: 0;
   }
 
   .main-header {
@@ -1876,5 +2084,16 @@ body {
     right: auto;
     left: 0;
     min-width: 190px;
+  }
+
+  /* Journal */
+  .journal-date-tabs {
+    flex-wrap: wrap;
+  }
+  .journal-title-input {
+    font-size: 16px;
+  }
+  .journal-content-input {
+    min-height: 200px;
   }
 }

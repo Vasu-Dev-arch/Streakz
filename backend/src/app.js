@@ -5,6 +5,8 @@ import habitsRoutes from './routes/habits.routes.js';
 import completionsRoutes from './routes/completions.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import aiRoutes from './routes/ai.routes.js';
+import journalRoutes from './routes/journal.routes.js';
+import goalsRoutes from './routes/goals.routes.js';
 import { authenticate } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -41,6 +43,8 @@ app.use('/api/habits', authenticate, habitsRoutes);
 app.use('/api/completions', authenticate, completionsRoutes);
 app.use('/api/settings', authenticate, settingsRoutes);
 app.use('/api/ai', authenticate, aiRoutes);
+app.use('/api/journal', authenticate, journalRoutes);
+app.use('/api/goals', authenticate, goalsRoutes);
 
 app.use(errorHandler);
 

@@ -1,0 +1,10 @@
+export const metadata = {
+  title: 'Journal',
+  description: 'Write your daily journal entry. Reflect on your habits, thoughts, and progress.',
+};
+
+import { JournalPageClient } from '../../../components/views/JournalPageClient';
+
+export default function JournalPage() {
+  return <JournalPageClient />;
+}

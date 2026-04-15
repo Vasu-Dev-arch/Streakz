@@ -5,39 +5,35 @@
  *
  * Client-side shell for /auth.
  * - Reads auth state from useAuth
- * - Redirects to /dashboard if already logged in
- * - Passes Next.js router-based callbacks to the existing AuthPage UI
+ * - Redirects to the correct next page when auth state is ready
+ * - Routing logic is centralised in getAuthRedirectPath (single source of truth)
  */
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth, getAuthRedirectPath } from '../hooks/useAuth';
 import { AuthPage } from './AuthPage';
 
 export function AuthPageWrapper() {
   const router = useRouter();
-  const { token, login, signup, loginWithGoogle, error, loading } = useAuth();
+  const { token, user, login, signup, loginWithGoogle, error, loading } = useAuth();
 
-  // Already authenticated → go straight to dashboard
+  /**
+   * Redirect only once we have both a token AND the user object loaded.
+   * Without the user object we don't know name / isFirstLogin, which means
+   * getAuthRedirectPath would always return '/welcome' for JWT users whose
+   * name is already set.
+   */
   useEffect(() => {
-    if (token) router.replace('/dashboard');
-  }, [token, router]);
-
-  const handleLogin = async (creds) => {
-    await login(creds);
-    // useAuth sets token in localStorage; the effect above fires on next render
-  };
-
-  const handleSignup = async (creds) => {
-    await signup(creds);
-    // After signup the backend returns isFirstLogin=true, so we send to /welcome
-    router.replace('/welcome');
-  };
+    if (!token || user === null) return;
+    const nextRoute = getAuthRedirectPath({ name: user.name, isFirstLogin: user.isFirstLogin });
+    router.replace(nextRoute);
+  }, [token, user, router]);
 
   return (
     <AuthPage
-      onLogin={handleLogin}
-      onSignup={handleSignup}
+      onLogin={login}
+      onSignup={signup}
       onGoogleLogin={loginWithGoogle}
       error={error}
       loading={loading}

@@ -77,11 +77,13 @@ export async function handleGoogleCallback(req, res) {
     }
 
     const jwtToken = signToken(user._id.toString());
-    // Pass isFirstLogin so frontend can route to /welcome or /onboarding
+    // Pass isFirstLogin and prompt state so the frontend can route correctly.
     const firstLogin = isNewUser || user.isFirstLogin;
+    const firstHabitPromptShown = user.firstHabitPromptShown ?? false;
+    const normalizedName = encodeURIComponent(user.name || '');
 
     res.redirect(
-      `${frontendUrl}/auth/callback?token=${jwtToken}&isFirstLogin=${firstLogin}`
+      `${frontendUrl}/auth/callback?token=${jwtToken}&isFirstLogin=${firstLogin}&name=${normalizedName}&firstHabitPromptShown=${firstHabitPromptShown}`
     );
   } catch (err) {
     console.error('[Google OAuth]', err);

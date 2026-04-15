@@ -13,7 +13,7 @@
 
 import { useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth, getAuthRedirectPath } from '../hooks/useAuth';
 
 export function AuthCallbackHandler() {
   const searchParams = useSearchParams();
@@ -24,7 +24,11 @@ export function AuthCallbackHandler() {
     const result = handleGoogleCallback(searchParams);
 
     if (result?.ok) {
-      router.replace(result.isFirstLogin ? '/welcome' : '/dashboard');
+      const nextRoute = getAuthRedirectPath({
+        name: result.name,
+        isFirstLogin: result.isFirstLogin,
+      });
+      router.replace(nextRoute);
     } else {
       router.replace('/auth?error=true');
     }
