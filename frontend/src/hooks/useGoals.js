@@ -1,29 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getToken } from './useAuth';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
+var API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-async function apiFetch(path, options = {}) {
-  const token = getToken();
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
+async function apiFetch(path, options) {
+  var opts = options || {};
+  var token = getToken();
+  var res = await fetch(API_BASE + path, Object.assign({}, opts, {
+    headers: Object.assign(
+      { 'Content-Type': 'application/json' },
+      token ? { Authorization: 'Bearer ' + token } : {},
+      opts.headers || {}
+    ),
+  }));
   if (res.status === 204) return null;
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `${options.method ?? 'GET'} ${path} failed: ${res.status}`);
+  var data = await res.json();
+  if (!res.ok) {
+    throw new Error(
+      (data && data.error) ? data.error :
+      ((opts.method || 'GET') + ' ' + path + ' failed: ' + res.status)
+    );
+  }
   return data;
 }
 
 /**
  * useGoals — all goal data and operations, scoped to the authenticated user.
  * Mirrors the useHabits pattern: optimistic updates, API sync, error rollback.
- *
- * @param {string|null} token  JWT from useAuth — triggers reload on auth change
  */
 export function useGoals(token) {
   const [goals, setGoals] = useState([]);
@@ -31,20 +34,20 @@ export function useGoals(token) {
   const [error, setError] = useState(null);
 
   // ── Initial load ────────────────────────────────────────────────────────────
-  useEffect(() => {
+  useEffect(function () {
     if (!token) {
       setGoals([]);
       setLoading(false);
       return;
     }
 
-    let cancelled = false;
+    var cancelled = false;
 
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const data = await apiFetch('/api/goals');
+        var data = await apiFetch('/api/goals');
         if (!cancelled) setGoals(Array.isArray(data) ? data : []);
       } catch (err) {
         if (!cancelled) setError(err.message);
@@ -55,34 +58,41 @@ export function useGoals(token) {
     }
 
     load();
-    return () => { cancelled = true; };
+    return function () { cancelled = true; };
   }, [token]);
 
-  // ── CRUD ────────────────────────────────────────────────────────────────────
-  const addGoal = useCallback(async (goalData) => {
-    const data = await apiFetch('/api/goals', {
+  // ── Create ──────────────────────────────────────────────────────────────────
+  const addGoal = useCallback(async function (goalData) {
+    var data = await apiFetch('/api/goals', {
       method: 'POST',
       body: JSON.stringify(goalData),
     });
-    setGoals((prev) => [...prev, data]);
+    setGoals(function (prev) { return prev.concat([data]); });
     return data;
   }, []);
 
-  const updateGoal = useCallback(async (id, updates) => {
-    const data = await apiFetch(`/api/goals/${id}`, {
+  // ── Update metadata ─────────────────────────────────────────────────────────
+  const updateGoal = useCallback(async function (id, updates) {
+    var data = await apiFetch('/api/goals/' + id, {
       method: 'PATCH',
       body: JSON.stringify(updates),
     });
-    setGoals((prev) => prev.map((g) => (g.id === id ? data : g)));
+    setGoals(function (prev) {
+      return prev.map(function (g) { return g.id === id ? data : g; });
+    });
     return data;
   }, []);
 
-  const updateProgress = useCallback(async (id, progressData) => {
-    // Optimistic update
-    setGoals((prev) =>
-      prev.map((g) => {
+  // ── Update progress (optimistic) ────────────────────────────────────────────
+  const updateProgress = useCallback(async function (id, progressData) {
+    // Save snapshot of the goal before the optimistic update for potential rollback
+    var snapshot = null;
+
+    setGoals(function (prev) {
+      return prev.map(function (g) {
         if (g.id !== id) return g;
-        const updated = { ...g, ...progressData };
+        snapshot = g;
+        var updated = Object.assign({}, g, progressData);
         // Optimistically derive status
         if (updated.progressType === 'count' && updated.currentValue >= updated.targetValue) {
           updated.status = 'completed';
@@ -90,34 +100,46 @@ export function useGoals(token) {
           updated.status = 'completed';
         }
         return updated;
-      })
-    );
+      });
+    });
 
     try {
-      const data = await apiFetch(`/api/goals/${id}/progress`, {
+      var data = await apiFetch('/api/goals/' + id + '/progress', {
         method: 'PATCH',
         body: JSON.stringify(progressData),
       });
-      // Reconcile with server response (authoritative status)
-      setGoals((prev) => prev.map((g) => (g.id === id ? data : g)));
+      // Reconcile with authoritative server response
+      setGoals(function (prev) {
+        return prev.map(function (g) { return g.id === id ? data : g; });
+      });
       return data;
     } catch (err) {
-      // Rollback
-      setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...Object.fromEntries(Object.entries(progressData).map(([k]) => [k, g[k]])) } : g)));
+      // Rollback to snapshot
+      if (snapshot) {
+        var rollback = snapshot;
+        setGoals(function (prev) {
+          return prev.map(function (g) { return g.id === id ? rollback : g; });
+        });
+      }
       throw err;
     }
   }, []);
 
-  const deleteGoal = useCallback(async (id) => {
-    // Optimistic
-    setGoals((prev) => prev.filter((g) => g.id !== id));
+  // ── Delete (optimistic) ─────────────────────────────────────────────────────
+  const deleteGoal = useCallback(async function (id) {
+    // Optimistic removal
+    setGoals(function (prev) { return prev.filter(function (g) { return g.id !== id; }); });
     try {
-      await apiFetch(`/api/goals/${id}`, { method: 'DELETE' });
+      await apiFetch('/api/goals/' + id, { method: 'DELETE' });
     } catch (err) {
       console.error('Failed to delete goal:', err);
-      // Re-fetch on failure to restore state
-      const data = await apiFetch('/api/goals');
-      setGoals(Array.isArray(data) ? data : []);
+      // Re-fetch to restore correct state
+      try {
+        var data = await apiFetch('/api/goals');
+        setGoals(Array.isArray(data) ? data : []);
+      } catch (fetchErr) {
+        console.error('Failed to restore goals after delete error:', fetchErr);
+      }
     }
   }, []);
 

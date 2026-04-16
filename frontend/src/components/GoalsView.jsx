@@ -13,7 +13,10 @@ function todayStr() {
 
 function formatDeadline(dateStr) {
   if (!dateStr) return '';
-  const [y, m, day] = dateStr.split('-').map(Number);
+  const parts = dateStr.split('-').map(Number);
+  const y = parts[0];
+  const m = parts[1];
+  const day = parts[2];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${months[m - 1]} ${day}, ${y}`;
 }
@@ -47,57 +50,91 @@ const STATUS_STYLE = {
   overdue: { color: 'var(--red)', bg: 'color-mix(in srgb, var(--red) 12%, transparent)' },
 };
 
-// ── Create Goal Form ──────────────────────────────────────────────────────────
+// ── Shared inline panel wrapper ───────────────────────────────────────────────
 
-const EMPTY_FORM = {
-  title: '',
-  description: '',
-  deadline: '',
-  priority: 'medium',
-  progressType: 'percentage',
-  targetValue: '',
-};
+function InlinePanel({ children }) {
+  return (
+    <div
+      style={{
+        background: 'var(--bg3)',
+        border: '1px solid var(--border2)',
+        borderRadius: 'var(--radius-sm)',
+        padding: '14px',
+        marginTop: '10px',
+        animation: 'modalSlideUp 0.18s cubic-bezier(0.4,0,0.2,1)',
+      }}
+      onClick={function (e) { e.stopPropagation(); }}
+    >
+      {children}
+    </div>
+  );
+}
 
-function GoalForm({ onSave, onCancel, saving }) {
-  const [form, setForm] = useState(EMPTY_FORM);
+// ── Goal Form (shared by create + edit) ───────────────────────────────────────
+
+function GoalForm({ initial, onSave, onCancel, saving, submitLabel }) {
+  var label = submitLabel || 'Create goal';
+  var isEdit = Boolean(initial);
+
+  const [form, setForm] = useState({
+    title: initial ? (initial.title || '') : '',
+    description: initial ? (initial.description || '') : '',
+    deadline: initial ? (initial.deadline || '') : '',
+    priority: initial ? (initial.priority || 'medium') : 'medium',
+    progressType: initial ? (initial.progressType || 'percentage') : 'percentage',
+    targetValue: initial && initial.targetValue != null ? String(initial.targetValue) : '',
+  });
   const [err, setErr] = useState('');
 
-  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
+  function set(key, val) {
+    setForm(function (prev) {
+      var next = Object.assign({}, prev);
+      next[key] = val;
+      return next;
+    });
+  }
 
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
     setErr('');
 
     if (!form.title.trim()) { setErr('Title is required'); return; }
     if (!form.deadline) { setErr('Deadline is required'); return; }
-    if (form.deadline <= todayStr()) { setErr('Deadline must be in the future'); return; }
-    if (form.progressType === 'count') {
-      const tv = Number(form.targetValue);
+    if (!isEdit && form.deadline <= todayStr()) {
+      setErr('Deadline must be in the future');
+      return;
+    }
+    if (!isEdit && form.progressType === 'count') {
+      var tv = Number(form.targetValue);
       if (!form.targetValue || !Number.isFinite(tv) || tv <= 0) {
         setErr('Target value must be a positive number');
         return;
       }
     }
 
-    const payload = {
+    var payload = {
       title: form.title.trim(),
       description: form.description.trim(),
       deadline: form.deadline,
       priority: form.priority,
-      progressType: form.progressType,
     };
-    if (form.progressType === 'count') payload.targetValue = Number(form.targetValue);
+    if (!isEdit) {
+      payload.progressType = form.progressType;
+      if (form.progressType === 'count') {
+        payload.targetValue = Number(form.targetValue);
+      }
+    }
 
     try {
       await onSave(payload);
-    } catch (e) {
-      setErr(e.message || 'Failed to create goal');
+    } catch (saveErr) {
+      setErr((saveErr && saveErr.message) ? saveErr.message : 'Failed to save goal');
     }
-  };
+  }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      {/* Title */}
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
       <div className="form-group" style={{ marginBottom: 0 }}>
         <label className="form-label">Title *</label>
         <input
@@ -105,13 +142,12 @@ function GoalForm({ onSave, onCancel, saving }) {
           type="text"
           placeholder="e.g. Run a 5K"
           value={form.title}
-          onChange={(e) => set('title', e.target.value)}
+          onChange={function (e) { set('title', e.target.value); }}
           maxLength={200}
           autoFocus
         />
       </div>
 
-      {/* Description */}
       <div className="form-group" style={{ marginBottom: 0 }}>
         <label className="form-label">Description</label>
         <input
@@ -119,32 +155,29 @@ function GoalForm({ onSave, onCancel, saving }) {
           type="text"
           placeholder="Optional notes"
           value={form.description}
-          onChange={(e) => set('description', e.target.value)}
+          onChange={function (e) { set('description', e.target.value); }}
           maxLength={1000}
         />
       </div>
 
-      {/* Deadline */}
       <div className="form-group" style={{ marginBottom: 0 }}>
         <label className="form-label">Deadline *</label>
         <input
           className="form-input"
           type="date"
           value={form.deadline}
-          min={todayStr()}
-          onChange={(e) => set('deadline', e.target.value)}
+          onChange={function (e) { set('deadline', e.target.value); }}
           style={{ colorScheme: 'dark' }}
         />
       </div>
 
-      {/* Priority + Progress type row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isEdit ? '1fr' : '1fr 1fr', gap: '12px' }}>
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">Priority</label>
           <select
             className="form-input"
             value={form.priority}
-            onChange={(e) => set('priority', e.target.value)}
+            onChange={function (e) { set('priority', e.target.value); }}
             style={{ cursor: 'pointer' }}
           >
             <option value="low">Low</option>
@@ -152,22 +185,23 @@ function GoalForm({ onSave, onCancel, saving }) {
             <option value="high">High</option>
           </select>
         </div>
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">Progress type</label>
-          <select
-            className="form-input"
-            value={form.progressType}
-            onChange={(e) => set('progressType', e.target.value)}
-            style={{ cursor: 'pointer' }}
-          >
-            <option value="percentage">Percentage</option>
-            <option value="count">Count</option>
-          </select>
-        </div>
+        {!isEdit && (
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Progress type</label>
+            <select
+              className="form-input"
+              value={form.progressType}
+              onChange={function (e) { set('progressType', e.target.value); }}
+              style={{ cursor: 'pointer' }}
+            >
+              <option value="percentage">Percentage</option>
+              <option value="count">Count</option>
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* Conditional: target value for count goals */}
-      {form.progressType === 'count' && (
+      {!isEdit && form.progressType === 'count' && (
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">Target value *</label>
           <input
@@ -177,7 +211,7 @@ function GoalForm({ onSave, onCancel, saving }) {
             step="1"
             placeholder="e.g. 30"
             value={form.targetValue}
-            onChange={(e) => set('targetValue', e.target.value)}
+            onChange={function (e) { set('targetValue', e.target.value); }}
           />
         </div>
       )}
@@ -188,49 +222,39 @@ function GoalForm({ onSave, onCancel, saving }) {
         </p>
       )}
 
-      <div className="modal-actions" style={{ marginTop: '8px' }}>
+      <div className="modal-actions" style={{ marginTop: '4px' }}>
         <button type="button" className="btn-cancel" onClick={onCancel}>Cancel</button>
         <button type="submit" className="btn-save" disabled={saving}>
-          {saving ? 'Creating…' : 'Create goal'}
+          {saving ? 'Saving…' : label}
         </button>
       </div>
     </form>
   );
 }
 
-// ── Progress Update Panel ─────────────────────────────────────────────────────
+// ── Progress Panel ────────────────────────────────────────────────────────────
 
 function ProgressPanel({ goal, onUpdate, onClose }) {
-  const isCount = goal.progressType === 'count';
+  var isCount = goal.progressType === 'count';
   const [value, setValue] = useState(isCount ? goal.currentValue : goal.progress);
   const [saving, setSaving] = useState(false);
 
-  const QUICK_PCT = [25, 50, 75, 100];
+  var QUICK_PCT = [25, 50, 75, 100];
 
-  const handleSave = async (override) => {
+  async function handleSave(override) {
     setSaving(true);
-    const v = override !== undefined ? override : value;
-    const payload = isCount ? { currentValue: Number(v) } : { progress: Number(v) };
+    var v = override !== undefined ? override : value;
+    var payload = isCount ? { currentValue: Number(v) } : { progress: Number(v) };
     try {
       await onUpdate(goal.id, payload);
       onClose();
-    } catch {
+    } catch (_err) {
       setSaving(false);
     }
-  };
+  }
 
   return (
-    <div
-      style={{
-        background: 'var(--bg2)',
-        border: '1px solid var(--border2)',
-        borderRadius: 'var(--radius)',
-        padding: '16px',
-        marginTop: '10px',
-        animation: 'modalSlideUp 0.18s cubic-bezier(0.4,0,0.2,1)',
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
+    <InlinePanel>
       {isCount ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <label className="form-label" style={{ marginBottom: 0 }}>
@@ -239,7 +263,7 @@ function ProgressPanel({ goal, onUpdate, onClose }) {
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button
               className="btn-sm"
-              onClick={() => setValue((v) => Math.max(0, Number(v) - 1))}
+              onClick={function () { setValue(function (v) { return Math.max(0, Number(v) - 1); }); }}
               style={{ width: '36px', padding: '0', flexShrink: 0 }}
             >−</button>
             <input
@@ -247,84 +271,133 @@ function ProgressPanel({ goal, onUpdate, onClose }) {
               type="number"
               min="0"
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={function (e) { setValue(e.target.value); }}
               style={{ textAlign: 'center' }}
             />
             <button
               className="btn-sm"
-              onClick={() => setValue((v) => Number(v) + 1)}
+              onClick={function () { setValue(function (v) { return Number(v) + 1; }); }}
               style={{ width: '36px', padding: '0', flexShrink: 0 }}
             >+</button>
           </div>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <button className="btn-cancel" style={{ flex: 0, padding: '8px 16px', minHeight: 0 }} onClick={onClose}>Cancel</button>
-            <button className="btn-save" style={{ flex: 0, padding: '8px 20px', minHeight: 0 }} onClick={() => handleSave()} disabled={saving}>
+            <button className="btn-cancel" style={{ flex: 0, padding: '8px 16px', minHeight: 0 }} onClick={onClose}>
+              Cancel
+            </button>
+            <button className="btn-save" style={{ flex: 0, padding: '8px 20px', minHeight: 0 }} onClick={function () { handleSave(); }} disabled={saving}>
               {saving ? 'Saving…' : 'Save'}
             </button>
           </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <label className="form-label" style={{ marginBottom: 0 }}>Progress: {Math.round(value)}%</label>
+          <label className="form-label" style={{ marginBottom: 0 }}>
+            Progress: {Math.round(value)}%
+          </label>
           <input
             type="range"
             min="0"
             max="100"
             step="1"
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={function (e) { setValue(e.target.value); }}
             style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
           />
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {QUICK_PCT.map((pct) => (
-              <button
-                key={pct}
-                className="btn-sm"
-                style={Number(value) === pct ? { background: 'var(--accent-a20)', borderColor: 'var(--accent)', color: 'var(--accent2)' } : {}}
-                onClick={() => handleSave(pct)}
-                disabled={saving}
-              >
-                {pct}%
-              </button>
-            ))}
+            {QUICK_PCT.map(function (pct) {
+              return (
+                <button
+                  key={pct}
+                  className="btn-sm"
+                  style={Number(value) === pct
+                    ? { background: 'var(--accent-a20)', borderColor: 'var(--accent)', color: 'var(--accent2)' }
+                    : {}}
+                  onClick={function () { handleSave(pct); }}
+                  disabled={saving}
+                >
+                  {pct}%
+                </button>
+              );
+            })}
           </div>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <button className="btn-cancel" style={{ flex: 0, padding: '8px 16px', minHeight: 0 }} onClick={onClose}>Cancel</button>
-            <button className="btn-save" style={{ flex: 0, padding: '8px 20px', minHeight: 0 }} onClick={() => handleSave()} disabled={saving}>
+            <button className="btn-cancel" style={{ flex: 0, padding: '8px 16px', minHeight: 0 }} onClick={onClose}>
+              Cancel
+            </button>
+            <button className="btn-save" style={{ flex: 0, padding: '8px 20px', minHeight: 0 }} onClick={function () { handleSave(); }} disabled={saving}>
               {saving ? 'Saving…' : 'Save'}
             </button>
           </div>
         </div>
       )}
-    </div>
+    </InlinePanel>
+  );
+}
+
+// ── Edit Panel ────────────────────────────────────────────────────────────────
+
+function EditPanel({ goal, onUpdate, onClose }) {
+  const [saving, setSaving] = useState(false);
+  const [panelErr, setPanelErr] = useState('');
+
+  async function handleSave(payload) {
+    setSaving(true);
+    setPanelErr('');
+    try {
+      await onUpdate(goal.id, payload);
+      onClose();
+    } catch (updateErr) {
+      setSaving(false);
+      setPanelErr((updateErr && updateErr.message) ? updateErr.message : 'Failed to update goal');
+    }
+  }
+
+  return (
+    <InlinePanel>
+      {panelErr && (
+        <p style={{ fontSize: '13px', color: 'var(--red)', fontFamily: 'var(--mono)', margin: '0 0 10px 0' }}>
+          {panelErr}
+        </p>
+      )}
+      <GoalForm
+        initial={goal}
+        onSave={handleSave}
+        onCancel={onClose}
+        saving={saving}
+        submitLabel="Save changes"
+      />
+    </InlinePanel>
   );
 }
 
 // ── Goal Card ─────────────────────────────────────────────────────────────────
 
-function GoalCard({ goal, onUpdateProgress, onDelete }) {
-  const [progressOpen, setProgressOpen] = useState(false);
+function GoalCard({ goal, onUpdateProgress, onUpdate, onDelete }) {
+  const [panel, setPanel] = useState(null); // null | 'progress' | 'edit'
   const [deleting, setDeleting] = useState(false);
 
-  const statusStyle = STATUS_STYLE[goal.status] ?? STATUS_STYLE.active;
-  const isCompleted = goal.status === 'completed';
+  var statusStyle = STATUS_STYLE[goal.status] || STATUS_STYLE.active;
+  var isCompleted = goal.status === 'completed';
 
-  const progressPct = goal.progressType === 'count'
+  var progressPct = goal.progressType === 'count'
     ? Math.min(100, goal.targetValue > 0 ? Math.round((goal.currentValue / goal.targetValue) * 100) : 0)
     : Math.min(100, goal.progress);
 
-  const handleDelete = async () => {
-    if (!confirm(`Delete goal "${goal.title}"?`)) return;
+  async function handleDelete() {
+    if (!confirm('Delete goal "' + goal.title + '"?')) return;
     setDeleting(true);
     await onDelete(goal.id);
-  };
+  }
+
+  function openPanel(name) {
+    setPanel(function (cur) { return cur === name ? null : name; });
+  }
 
   return (
     <div
-      className={`goal-card${isCompleted ? ' goal-card--completed' : ''}`}
       style={{
         background: 'var(--bg2)',
-        border: `1px solid ${isCompleted ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`,
+        border: '1px solid ' + (isCompleted ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'),
         borderRadius: 'var(--radius)',
         padding: '16px 18px',
         position: 'relative',
@@ -353,35 +426,47 @@ function GoalCard({ goal, onUpdateProgress, onDelete }) {
             </div>
           )}
         </div>
-        {/* Delete button */}
-        <button
-          className="habit-action-btn habit-action-btn--delete"
-          onClick={handleDelete}
-          disabled={deleting}
-          aria-label="Delete goal"
-          title="Delete goal"
-        >
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-            <path d="M10 11v6M14 11v6" />
-          </svg>
-        </button>
+
+        {/* Edit + Delete buttons */}
+        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+          <button
+            className={'habit-action-btn' + (panel === 'edit' ? ' habit-action-btn--active' : '')}
+            onClick={function () { openPanel('edit'); }}
+            aria-label="Edit goal"
+            title="Edit goal"
+          >
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          <button
+            className="habit-action-btn habit-action-btn--delete"
+            onClick={handleDelete}
+            disabled={deleting}
+            aria-label="Delete goal"
+            title="Delete goal"
+          >
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {/* Badges row */}
+      {/* Badges */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
-        {/* Priority */}
         <span style={{
           fontSize: '10px', fontFamily: 'var(--mono)', textTransform: 'uppercase',
           letterSpacing: '0.5px', padding: '2px 8px', borderRadius: '4px',
           background: PRIORITY_BG[goal.priority],
           color: PRIORITY_COLORS[goal.priority],
-          border: `1px solid color-mix(in srgb, ${PRIORITY_COLORS[goal.priority]} 25%, transparent)`,
+          border: '1px solid color-mix(in srgb, ' + PRIORITY_COLORS[goal.priority] + ' 25%, transparent)',
         }}>
           {goal.priority}
         </span>
-        {/* Status */}
         <span style={{
           fontSize: '10px', fontFamily: 'var(--mono)', textTransform: 'uppercase',
           letterSpacing: '0.5px', padding: '2px 8px', borderRadius: '4px',
@@ -389,62 +474,69 @@ function GoalCard({ goal, onUpdateProgress, onDelete }) {
         }}>
           {goal.status}
         </span>
-        {/* Deadline */}
         <span style={{ fontSize: '11px', fontFamily: 'var(--mono)', color: goal.status === 'overdue' ? 'var(--red)' : 'var(--text3)' }}>
           {formatDeadline(goal.deadline)} · {daysUntil(goal.deadline)}
         </span>
       </div>
 
-      {/* Progress display */}
-      <div style={{ marginBottom: progressOpen ? '0' : '12px' }}>
+      {/* Progress bar */}
+      <div style={{ marginBottom: panel ? '0' : '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
           <span style={{ fontSize: '11px', fontFamily: 'var(--mono)', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '1px' }}>
             Progress
           </span>
           <span style={{ fontSize: '13px', fontFamily: 'var(--mono)', fontWeight: 600, color: 'var(--text2)' }}>
             {goal.progressType === 'count'
-              ? `${goal.currentValue} / ${goal.targetValue}`
-              : `${Math.round(goal.progress)}%`}
+              ? (goal.currentValue + ' / ' + goal.targetValue)
+              : (Math.round(goal.progress) + '%')}
           </span>
         </div>
         <div className="progress-bar-wrap">
           <div
             className="progress-bar-fill"
             style={{
-              width: `${progressPct}%`,
+              width: progressPct + '%',
               background: isCompleted ? 'var(--green)' : 'var(--accent)',
             }}
           />
         </div>
       </div>
 
-      {/* Progress panel (inline, not a modal) */}
-      {progressOpen && (
+      {/* Inline panels — only one open at a time */}
+      {panel === 'progress' && (
         <ProgressPanel
           goal={goal}
           onUpdate={onUpdateProgress}
-          onClose={() => setProgressOpen(false)}
+          onClose={function () { setPanel(null); }}
+        />
+      )}
+      {panel === 'edit' && (
+        <EditPanel
+          goal={goal}
+          onUpdate={onUpdate}
+          onClose={function () { setPanel(null); }}
         />
       )}
 
       {/* Footer actions */}
-      {!isCompleted && !progressOpen && (
+      {!isCompleted && !panel && (
         <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
           <button
             className="btn-sm"
             style={{ flex: 1, fontSize: '12px' }}
-            onClick={() => setProgressOpen(true)}
+            onClick={function () { openPanel('progress'); }}
           >
             Update progress
           </button>
-          {/* Quick complete */}
           <button
             className="btn-sm"
             title="Mark as complete"
-            onClick={() => onUpdateProgress(goal.id, goal.progressType === 'count'
-              ? { currentValue: goal.targetValue }
-              : { progress: 100 }
-            )}
+            onClick={function () {
+              var payload = goal.progressType === 'count'
+                ? { currentValue: goal.targetValue }
+                : { progress: 100 };
+              onUpdateProgress(goal.id, payload);
+            }}
             style={{ padding: '7px 10px' }}
           >
             ✓
@@ -459,12 +551,12 @@ function GoalCard({ goal, onUpdateProgress, onDelete }) {
 
 export function GoalsView() {
   const { token } = useAuth();
-  const { goals, loading, addGoal, updateProgress, deleteGoal } = useGoals(token);
+  const { goals, loading, addGoal, updateGoal, updateProgress, deleteGoal } = useGoals(token);
 
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const handleAddGoal = async (payload) => {
+  async function handleAddGoal(payload) {
     setSaving(true);
     try {
       await addGoal(payload);
@@ -472,31 +564,28 @@ export function GoalsView() {
     } finally {
       setSaving(false);
     }
-  };
+  }
 
-  // Sort: active first, then overdue, then completed; within each by deadline
-  const sorted = [...goals].sort((a, b) => {
-    const ORDER = { active: 0, overdue: 1, completed: 2 };
-    const od = (ORDER[a.status] ?? 0) - (ORDER[b.status] ?? 0);
+  var ORDER = { active: 0, overdue: 1, completed: 2 };
+  var sorted = goals.slice().sort(function (a, b) {
+    var od = (ORDER[a.status] || 0) - (ORDER[b.status] || 0);
     if (od !== 0) return od;
-    return a.deadline.localeCompare(b.deadline);
+    return a.deadline < b.deadline ? -1 : a.deadline > b.deadline ? 1 : 0;
   });
 
-  const active = sorted.filter((g) => g.status === 'active');
-  const overdue = sorted.filter((g) => g.status === 'overdue');
-  const completed = sorted.filter((g) => g.status === 'completed');
+  var active = sorted.filter(function (g) { return g.status === 'active'; });
+  var overdue = sorted.filter(function (g) { return g.status === 'overdue'; });
+  var completed = sorted.filter(function (g) { return g.status === 'completed'; });
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto' }}>
       {/* Page header */}
       <div className="section-header" style={{ marginBottom: '20px' }}>
-        <div>
-          <div style={{ fontSize: '13px', color: 'var(--text3)', fontFamily: 'var(--mono)', marginBottom: '4px' }}>
-            {goals.length} goal{goals.length !== 1 ? 's' : ''} total
-          </div>
+        <div style={{ fontSize: '13px', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
+          {goals.length} goal{goals.length !== 1 ? 's' : ''} total
         </div>
         {!showForm && (
-          <button className="btn-primary" onClick={() => setShowForm(true)}>
+          <button className="btn-primary" onClick={function () { setShowForm(true); }}>
             + New goal
           </button>
         )}
@@ -512,7 +601,11 @@ export function GoalsView() {
           marginBottom: '28px',
         }}>
           <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: '18px' }}>New Goal</div>
-          <GoalForm onSave={handleAddGoal} onCancel={() => setShowForm(false)} saving={saving} />
+          <GoalForm
+            onSave={handleAddGoal}
+            onCancel={function () { setShowForm(false); }}
+            saving={saving}
+          />
         </div>
       )}
 
@@ -530,7 +623,7 @@ export function GoalsView() {
         </div>
       )}
 
-      {/* Active goals */}
+      {/* Active */}
       {active.length > 0 && (
         <section style={{ marginBottom: '28px' }}>
           <div className="section-header">
@@ -538,14 +631,16 @@ export function GoalsView() {
             <span style={{ fontSize: '12px', fontFamily: 'var(--mono)', color: 'var(--text3)' }}>{active.length}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {active.map((g) => (
-              <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onDelete={deleteGoal} />
-            ))}
+            {active.map(function (g) {
+              return (
+                <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onUpdate={updateGoal} onDelete={deleteGoal} />
+              );
+            })}
           </div>
         </section>
       )}
 
-      {/* Overdue goals */}
+      {/* Overdue */}
       {overdue.length > 0 && (
         <section style={{ marginBottom: '28px' }}>
           <div className="section-header">
@@ -553,14 +648,16 @@ export function GoalsView() {
             <span style={{ fontSize: '12px', fontFamily: 'var(--mono)', color: 'var(--red)' }}>{overdue.length}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {overdue.map((g) => (
-              <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onDelete={deleteGoal} />
-            ))}
+            {overdue.map(function (g) {
+              return (
+                <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onUpdate={updateGoal} onDelete={deleteGoal} />
+              );
+            })}
           </div>
         </section>
       )}
 
-      {/* Completed goals */}
+      {/* Completed */}
       {completed.length > 0 && (
         <section>
           <div className="section-header">
@@ -568,9 +665,11 @@ export function GoalsView() {
             <span style={{ fontSize: '12px', fontFamily: 'var(--mono)', color: 'var(--green)' }}>{completed.length}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {completed.map((g) => (
-              <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onDelete={deleteGoal} />
-            ))}
+            {completed.map(function (g) {
+              return (
+                <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onUpdate={updateGoal} onDelete={deleteGoal} />
+              );
+            })}
           </div>
         </section>
       )}

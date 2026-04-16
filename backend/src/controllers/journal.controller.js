@@ -3,9 +3,7 @@ import { AppError } from '../middleware/AppError.js';
 import { assertDateString } from '../utils/validation.js';
 
 /**
- * Returns the local YYYY-MM-DD string for a given UTC offset.
- * We compute "today" and "yesterday" server-side using the same
- * logic as the client so the allowed window is consistent.
+ * Returns the local YYYY-MM-DD string for a date offset by `daysAgo` days.
  */
 function localDateKey(d = new Date()) {
   const y = d.getFullYear();
@@ -15,9 +13,7 @@ function localDateKey(d = new Date()) {
 }
 
 /**
- * Validate that the requested date is today or yesterday.
- * "Late-night" scenario: yesterday is always allowed so users can
- * log the previous day after midnight.
+ * Validate that the requested date is today or yesterday only.
  */
 function assertAllowedJournalDate(date) {
   const now = new Date();
@@ -37,13 +33,12 @@ function assertAllowedJournalDate(date) {
 
 /**
  * GET /api/journal?date=YYYY-MM-DD
- * Returns the entry for the given date, or 404 if none exists.
+ * Returns the entry for the given date, or null if none exists.
  */
 export async function getEntry(req, res) {
   const { date } = req.query;
 
   if (!date) {
-    // Default to today
     const today = localDateKey();
     const entry = await Journal.findOne({ userId: req.user.id, date: today });
     return res.json(entry ? entry.toJSON() : null);
@@ -52,29 +47,39 @@ export async function getEntry(req, res) {
   assertDateString(date);
 
   const entry = await Journal.findOne({ userId: req.user.id, date });
-  if (!entry) return res.json(null);
-  res.json(entry.toJSON());
+  res.json(entry ? entry.toJSON() : null);
 }
 
+/**
+ * GET /api/journal/history
+ * Returns all entries strictly before today, sorted newest first.
+ * Includes today=false so the write form and history list never overlap.
+ */
 export async function getHistory(req, res) {
-  const yesterdayStr = localDateKey(1);
+  const todayStr = localDateKey();
 
   const entries = await Journal.find({
     userId: req.user.id,
-    date: { $lt: yesterdayStr },
+    date: { $lt: todayStr },   // everything before today (includes yesterday and older)
   })
     .sort({ date: -1 })
     .select('date title content')
     .lean();
 
-  res.json(entries);
+  res.json(
+    entries.map((e) => ({
+      id: e._id.toString(),
+      date: e.date,
+      title: e.title ?? '',
+      content: e.content,
+    }))
+  );
 }
 
 /**
  * POST /api/journal
  * Body: { date, title?, content }
- * Upserts: updates an existing entry if one exists for that date,
- * otherwise creates a new one.
+ * Upserts: updates if entry already exists for that date.
  */
 export async function upsertEntry(req, res) {
   const { date, title = '', content } = req.body || {};

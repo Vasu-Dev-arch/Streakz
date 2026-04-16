@@ -5,52 +5,50 @@ import { getToken } from '../hooks/useAuth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 
-/**
- * Returns YYYY-MM-DD for a date offset by `daysAgo` days from today,
- * using local time (consistent with the backend helper).
- */
-function localDateKey(daysAgo = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() - daysAgo);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+function localDateKey(daysAgo) {
+  var offset = daysAgo || 0;
+  var d = new Date();
+  d.setDate(d.getDate() - offset);
+  return (
+    d.getFullYear() +
+    '-' +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    '-' +
+    String(d.getDate()).padStart(2, '0')
+  );
 }
 
-/**
- * Format a YYYY-MM-DD string into a human-readable label, e.g. "Today, Apr 15".
- */
 function formatDateLabel(dateStr, todayStr, yesterdayStr) {
-  const [, m, day] = dateStr.split('-').map(Number);
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-  if (dateStr === todayStr) {
-    return `Today, ${months[m - 1]} ${day}`;
-  }
-  if (dateStr === yesterdayStr) {
-    return `Yesterday, ${months[m - 1]} ${day}`;
-  }
-
-  return `${months[m - 1]} ${day}`;
+  var parts = dateStr.split('-').map(Number);
+  var y = parts[0];
+  var m = parts[1];
+  var day = parts[2];
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var monthName = months[m - 1];
+  if (dateStr === todayStr) return 'Today, ' + monthName + ' ' + day;
+  if (dateStr === yesterdayStr) return 'Yesterday, ' + monthName + ' ' + day;
+  return monthName + ' ' + day + ', ' + y;
 }
 
-async function apiFetch(path, options = {}) {
-  const token = getToken();
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
+async function apiFetch(path, options) {
+  var opts = options || {};
+  var token = getToken();
+  var res = await fetch(API_BASE + path, Object.assign({}, opts, {
+    headers: Object.assign(
+      { 'Content-Type': 'application/json' },
+      token ? { Authorization: 'Bearer ' + token } : {},
+      opts.headers || {}
+    ),
+  }));
   if (res.status === 204) return null;
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `${res.status}`);
+  var data = await res.json();
+  if (!res.ok) throw new Error((data && data.error) ? data.error : String(res.status));
   return data;
 }
 
 export function JournalView() {
-  const todayStr = localDateKey(0);
-  const yesterdayStr = localDateKey(1);
+  var todayStr = localDateKey(0);
+  var yesterdayStr = localDateKey(1);
 
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [title, setTitle] = useState('');
@@ -59,18 +57,19 @@ export function JournalView() {
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState(null); // null | 'saved' | 'error'
   const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [expandedEntry, setExpandedEntry] = useState(null);
   const statusTimerRef = useRef(null);
 
-  // Fetch the entry whenever the selected date changes
-  const fetchEntry = useCallback(async (date) => {
+  // ── Fetch entry for selected date ──────────────────────────────────────────
+  const fetchEntry = useCallback(async function (date) {
     setFetchLoading(true);
     setStatus(null);
     try {
-      const entry = await apiFetch(`/api/journal?date=${date}`);
-      setTitle(entry?.title ?? '');
-      setContent(entry?.content ?? '');
-    } catch {
+      var entry = await apiFetch('/api/journal?date=' + date);
+      setTitle((entry && entry.title) ? entry.title : '');
+      setContent((entry && entry.content) ? entry.content : '');
+    } catch (_err) {
       setTitle('');
       setContent('');
     } finally {
@@ -78,37 +77,34 @@ export function JournalView() {
     }
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadHistory() {
-      try {
-        const pastEntries = await apiFetch('/api/journal/history');
-        if (mounted) setHistory(Array.isArray(pastEntries) ? pastEntries : []);
-      } catch {
-        if (mounted) setHistory([]);
-      }
-    }
-
-    loadHistory();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
+  useEffect(function () {
     fetchEntry(selectedDate);
   }, [selectedDate, fetchEntry]);
 
+  // ── Fetch history (all entries before today) ───────────────────────────────
+  const fetchHistory = useCallback(async function () {
+    setHistoryLoading(true);
+    try {
+      var entries = await apiFetch('/api/journal/history');
+      setHistory(Array.isArray(entries) ? entries : []);
+    } catch (_err) {
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(function () {
+    fetchHistory();
+  }, [fetchHistory]);
+
   // Cleanup status timer on unmount
-  useEffect(() => () => clearTimeout(statusTimerRef.current), []);
+  useEffect(function () {
+    return function () { clearTimeout(statusTimerRef.current); };
+  }, []);
 
-  const handleDateChange = (date) => {
-    if (date === selectedDate) return;
-    setSelectedDate(date);
-  };
-
-  const handleSave = async () => {
+  // ── Save ───────────────────────────────────────────────────────────────────
+  async function handleSave() {
     if (!content.trim()) return;
     setSaving(true);
     setStatus(null);
@@ -123,41 +119,44 @@ export function JournalView() {
         }),
       });
       setStatus('saved');
-    } catch {
+      fetchHistory();
+    } catch (_err) {
       setStatus('error');
     } finally {
       setSaving(false);
-      statusTimerRef.current = setTimeout(() => setStatus(null), 3000);
+      statusTimerRef.current = setTimeout(function () { setStatus(null); }, 3000);
     }
-  };
+  }
 
-  const getPreviewText = (entry) => {
-    const text = entry.title?.trim() || entry.content.trim();
-    if (!text) return '';
-    return text.length > 30 ? `${text.slice(0, 30)}…` : text;
-  };
+  function getPreviewText(entry) {
+    var text = (entry.title && entry.title.trim()) || (entry.content && entry.content.trim()) || '';
+    return text.length > 40 ? text.slice(0, 40) + '…' : text;
+  }
 
-  const handleToggleEntry = (date) => {
-    setExpandedEntry((current) => (current === date ? null : date));
-  };
+  function handleToggleEntry(date) {
+    setExpandedEntry(function (cur) { return cur === date ? null : date; });
+  }
 
   return (
     <div className="journal-view">
       {/* Date tabs — today and yesterday only */}
       <div className="journal-date-tabs" role="tablist" aria-label="Select date">
-        {[todayStr, yesterdayStr].map((date) => (
-          <button
-            key={date}
-            role="tab"
-            aria-selected={selectedDate === date}
-            className={`journal-date-tab${selectedDate === date ? ' active' : ''}`}
-            onClick={() => handleDateChange(date)}
-          >
-            {formatDateLabel(date, todayStr, yesterdayStr)}
-          </button>
-        ))}
+        {[todayStr, yesterdayStr].map(function (date) {
+          return (
+            <button
+              key={date}
+              role="tab"
+              aria-selected={selectedDate === date}
+              className={'journal-date-tab' + (selectedDate === date ? ' active' : '')}
+              onClick={function () { if (date !== selectedDate) setSelectedDate(date); }}
+            >
+              {formatDateLabel(date, todayStr, yesterdayStr)}
+            </button>
+          );
+        })}
       </div>
 
+      {/* Entry editor */}
       {fetchLoading ? (
         <div style={{ color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: '13px', paddingTop: '20px' }}>
           Loading…
@@ -169,7 +168,7 @@ export function JournalView() {
             className="journal-title-input"
             placeholder="Title (optional)"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={function (e) { setTitle(e.target.value); }}
             maxLength={200}
             aria-label="Journal entry title"
           />
@@ -177,7 +176,7 @@ export function JournalView() {
             className="journal-content-input"
             placeholder="What's on your mind today?"
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={function (e) { setContent(e.target.value); }}
             maxLength={10000}
             aria-label="Journal entry content"
           />
@@ -199,20 +198,23 @@ export function JournalView() {
         </div>
       )}
 
+      {/* Past entries — everything before today */}
       <section className="journal-history">
         <h2 className="journal-history__title">Past Entries</h2>
-        {history.length === 0 ? (
-          <p className="journal-history__empty">No past entries yet</p>
+        {historyLoading ? (
+          <p className="journal-history__empty" style={{ fontFamily: 'var(--mono)', fontSize: '13px' }}>Loading…</p>
+        ) : history.length === 0 ? (
+          <p className="journal-history__empty">No past entries yet.</p>
         ) : (
           <div className="journal-history__list">
-            {history.map((entry) => {
-              const isExpanded = expandedEntry === entry.date;
+            {history.map(function (entry) {
+              var isExpanded = expandedEntry === entry.date;
               return (
                 <div key={entry.date} className="journal-history__item">
                   <button
                     type="button"
-                    className={`journal-history__toggle${isExpanded ? ' expanded' : ''}`}
-                    onClick={() => handleToggleEntry(entry.date)}
+                    className={'journal-history__toggle' + (isExpanded ? ' expanded' : '')}
+                    onClick={function () { handleToggleEntry(entry.date); }}
                   >
                     <span className="journal-history__date">
                       {formatDateLabel(entry.date, todayStr, yesterdayStr)}
@@ -223,6 +225,11 @@ export function JournalView() {
                   </button>
                   {isExpanded && (
                     <div className="journal-history__content">
+                      {entry.title && (
+                        <div style={{ fontWeight: 600, marginBottom: '8px', color: 'var(--text)' }}>
+                          {entry.title}
+                        </div>
+                      )}
                       {entry.content}
                     </div>
                   )}

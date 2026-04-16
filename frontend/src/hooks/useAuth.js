@@ -1,8 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 
-// ── Environment ────────────────────────────────────────────────────────────────
-// Vite used import.meta.env.VITE_API_URL.
-// Next.js uses process.env.NEXT_PUBLIC_* (inlined at build time).
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 
@@ -96,7 +93,6 @@ export function useAuth() {
     window.location.href = `${API_BASE}/api/auth/google`;
   }, []);
 
-  // searchParams can be a URLSearchParams object or a Next.js ReadonlyURLSearchParams
   const handleGoogleCallback = useCallback((searchParams) => {
     const token = searchParams.get('token');
     const err = searchParams.get('error');
@@ -184,8 +180,8 @@ export function useAuth() {
       setUser(data);
       setIsFirstLogin(data.isFirstLogin ?? false);
       setFirstHabitPromptShown(data.firstHabitPromptShown ?? false);
-    } catch {
-      // silently fail
+    } catch (_err) {
+      // silently fail — network error or invalid token, handled by redirect guard
     }
   }, []);
 
