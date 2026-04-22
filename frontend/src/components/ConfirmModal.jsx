@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
 
 /**
  * Custom confirmation modal component
  */
-export function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
+export function ConfirmModal({ isOpen, title, message, onConfirm, onCancel, loading }) {
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Escape') {
+      onCancel();
+    }
+  }, [onCancel]);
+
+  useEffect(() => {
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, handleKeyDown]);
+
   if (!isOpen) return null;
 
   return (
@@ -83,6 +96,7 @@ export function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
         }}>
           <button
             onClick={onCancel}
+            disabled={loading}
             style={{
               padding: '10px 20px',
               borderRadius: '8px',
@@ -92,7 +106,8 @@ export function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
               fontSize: '14px',
               fontWeight: 500,
               fontFamily: 'var(--sans)',
-              cursor: 'pointer',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1,
               transition: 'all 0.15s'
             }}
           >
@@ -100,6 +115,7 @@ export function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
           </button>
           <button
             onClick={onConfirm}
+            disabled={loading}
             style={{
               padding: '10px 20px',
               borderRadius: '8px',
@@ -109,11 +125,22 @@ export function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
               fontSize: '14px',
               fontWeight: 500,
               fontFamily: 'var(--sans)',
-              cursor: 'pointer',
-              transition: 'all 0.15s'
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+              transition: 'all 0.15s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              minWidth: '90px',
+              justifyContent: 'center'
             }}
           >
-            Delete
+            {loading && (
+              <svg width="14" height="14" viewBox="0 0 24 24" style={{ animation: 'spin 1s linear infinite' }}>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" strokeDasharray="32" strokeDashoffset="12" />
+              </svg>
+            )}
+            {loading ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </div>
@@ -128,6 +155,10 @@ export function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
             opacity: 1;
             transform: scale(1) translateY(0);
           }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

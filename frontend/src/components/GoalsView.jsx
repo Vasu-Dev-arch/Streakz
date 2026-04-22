@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useGoals } from '../hooks/useGoals';
+import { ConfirmModal } from './ConfirmModal';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -372,9 +373,8 @@ function EditPanel({ goal, onUpdate, onClose }) {
 
 // ── Goal Card ─────────────────────────────────────────────────────────────────
 
-function GoalCard({ goal, onUpdateProgress, onUpdate, onDelete }) {
+function GoalCard({ goal, onUpdateProgress, onUpdate, onDelete, onRequestDelete }) {
   const [panel, setPanel] = useState(null); // null | 'progress' | 'edit'
-  const [deleting, setDeleting] = useState(false);
 
   var statusStyle = STATUS_STYLE[goal.status] || STATUS_STYLE.active;
   var isCompleted = goal.status === 'completed';
@@ -383,10 +383,8 @@ function GoalCard({ goal, onUpdateProgress, onUpdate, onDelete }) {
     ? Math.min(100, goal.targetValue > 0 ? Math.round((goal.currentValue / goal.targetValue) * 100) : 0)
     : Math.min(100, goal.progress);
 
-  async function handleDelete() {
-    if (!confirm('Delete goal "' + goal.title + '"?')) return;
-    setDeleting(true);
-    await onDelete(goal.id);
+  function handleDelete() {
+    onRequestDelete(goal);
   }
 
   function openPanel(name) {
@@ -401,7 +399,6 @@ function GoalCard({ goal, onUpdateProgress, onUpdate, onDelete }) {
         borderRadius: 'var(--radius)',
         padding: '16px 18px',
         position: 'relative',
-        opacity: deleting ? 0.5 : 1,
         transition: 'border-color 0.15s, opacity 0.15s',
       }}
     >
@@ -443,7 +440,6 @@ function GoalCard({ goal, onUpdateProgress, onUpdate, onDelete }) {
           <button
             className="habit-action-btn habit-action-btn--delete"
             onClick={handleDelete}
-            disabled={deleting}
             aria-label="Delete goal"
             title="Delete goal"
           >
@@ -578,6 +574,8 @@ export function GoalsView() {
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { goalId, title } | null
+  const [deletingGoalId, setDeletingGoalId] = useState(null);
 
   useEffect(function () {
     function up()   { setIsOnline(true); }
@@ -589,6 +587,26 @@ export function GoalsView() {
       window.removeEventListener('offline', down);
     };
   }, []);
+
+  function handleRequestDelete(goal) {
+    setDeleteConfirm({ goalId: goal.id, title: goal.title });
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteConfirm) return;
+    const goalIdToDelete = deleteConfirm.goalId;
+    setDeletingGoalId(goalIdToDelete);
+    setDeleteConfirm(null);
+    try {
+      await deleteGoal(goalIdToDelete);
+    } finally {
+      setDeletingGoalId(null);
+    }
+  }
+
+  function handleCancelDelete() {
+    setDeleteConfirm(null);
+  }
 
   async function handleAddGoal(payload) {
     setSaving(true);
@@ -669,7 +687,7 @@ export function GoalsView() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {active.map(function (g) {
               return (
-                <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onUpdate={updateGoal} onDelete={deleteGoal} />
+                <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onUpdate={updateGoal} onDelete={deleteGoal} onRequestDelete={handleRequestDelete} />
               );
             })}
           </div>
@@ -686,7 +704,7 @@ export function GoalsView() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {overdue.map(function (g) {
               return (
-                <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onUpdate={updateGoal} onDelete={deleteGoal} />
+                <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onUpdate={updateGoal} onDelete={deleteGoal} onRequestDelete={handleRequestDelete} />
               );
             })}
           </div>
@@ -703,12 +721,22 @@ export function GoalsView() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {completed.map(function (g) {
               return (
-                <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onUpdate={updateGoal} onDelete={deleteGoal} />
+                <GoalCard key={g.id} goal={g} onUpdateProgress={updateProgress} onUpdate={updateGoal} onDelete={deleteGoal} onRequestDelete={handleRequestDelete} />
               );
             })}
           </div>
         </section>
       )}
+
+      {/* Delete confirmation dialog */}
+      <ConfirmModal
+        isOpen={deleteConfirm !== null}
+        title="Delete Goal?"
+        message={deleteConfirm ? `Are you sure you want to delete "${deleteConfirm.title}"? This action cannot be undone.` : ''}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        loading={deletingGoalId !== null}
+      />
     </div>
   );
 }
