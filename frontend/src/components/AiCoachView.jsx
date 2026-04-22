@@ -2,15 +2,14 @@
 
 /**
  * AiCoachView
- *
- * Changed from Vite:
- *   - import.meta.env.VITE_API_URL → process.env.NEXT_PUBLIC_API_URL
- *   - Added 'use client' directive
+ * Offline-aware: shows a notice when internet is unavailable,
+ * since AI generation requires a live server call.
  */
 
 import React from 'react';
 import { getToken } from '../hooks/useAuth';
 import { COLORS, EMOJIS } from '../constants';
+import { OfflineFeatureNotice } from './OfflineFeatureNotice';
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
@@ -47,6 +46,21 @@ export function AiCoachView({
   onReset,
 }) {
   const defaultCategory = categories?.[0] ?? 'General';
+
+  // Detect online status locally so we can gate the generate button
+  const [isOnline, setIsOnline] = React.useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+  React.useEffect(() => {
+    const up = () => setIsOnline(true);
+    const down = () => setIsOnline(false);
+    window.addEventListener('online', up);
+    window.addEventListener('offline', down);
+    return () => {
+      window.removeEventListener('online', up);
+      window.removeEventListener('offline', down);
+    };
+  }, []);
 
   const handleGenerate = async (e) => {
     e?.preventDefault();
@@ -122,6 +136,11 @@ export function AiCoachView({
         </div>
       </div>
 
+      {/* Offline notice — AI requires internet */}
+      {!isOnline && (
+        <OfflineFeatureNotice message="AI Coach requires an internet connection. Your existing habits are still available offline." />
+      )}
+
       {/* Input */}
       <form className="ai-coach-form" onSubmit={handleGenerate}>
         <div className="ai-coach-input-row">
@@ -132,13 +151,14 @@ export function AiCoachView({
             onChange={(e) => setGoal(e.target.value)}
             placeholder="e.g. I want to get fit and sleep better"
             maxLength={300}
-            disabled={loading}
+            disabled={loading || !isOnline}
             autoFocus
           />
           <button
             type="submit"
             className="ai-coach-generate-btn"
-            disabled={loading || !goal.trim()}
+            disabled={loading || !goal.trim() || !isOnline}
+            title={!isOnline ? 'Internet required' : undefined}
           >
             {loading ? (
               <span className="ai-thinking">
@@ -268,6 +288,7 @@ export function AiCoachView({
                   key={suggestion}
                   className="ai-suggestion-chip"
                   onClick={() => setGoal(suggestion)}
+                  disabled={!isOnline}
                 >
                   {suggestion}
                 </button>

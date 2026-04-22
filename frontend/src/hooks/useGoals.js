@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getToken } from './useAuth';
+import {
+  cacheGoals,
+  getCachedGoals,
+  upsertCachedGoal,
+  deleteCachedGoal,
+  enqueueAction,
+} from '../utils/offlineDB';
 
 var API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -24,16 +31,12 @@ async function apiFetch(path, options) {
   return data;
 }
 
-/**
- * useGoals — all goal data and operations, scoped to the authenticated user.
- * Mirrors the useHabits pattern: optimistic updates, API sync, error rollback.
- */
 export function useGoals(token) {
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ── Initial load ────────────────────────────────────────────────────────────
+  // ── Initial load — offline-first ────────────────────────────────────────────
   useEffect(function () {
     if (!token) {
       setGoals([]);
@@ -46,33 +49,78 @@ export function useGoals(token) {
     async function load() {
       setLoading(true);
       setError(null);
+
+      // 1. Show cached data immediately
       try {
-        var data = await apiFetch('/api/goals');
-        if (!cancelled) setGoals(Array.isArray(data) ? data : []);
-      } catch (err) {
-        if (!cancelled) setError(err.message);
-        console.error('Failed to load goals:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
+        var cached = await getCachedGoals();
+        if (!cancelled && cached.length > 0) {
+          setGoals(cached);
+        }
+      } catch (_e) { /* ignore */ }
+
+      // 2. Fetch from server if online
+      if (navigator.onLine) {
+        try {
+          var data = await apiFetch('/api/goals');
+          if (!cancelled) {
+            var arr = Array.isArray(data) ? data : [];
+            setGoals(arr);
+            await cacheGoals(arr);
+          }
+        } catch (err) {
+          if (!cancelled) setError(err.message);
+          console.error('Failed to load goals:', err);
+        }
       }
+
+      if (!cancelled) setLoading(false);
     }
 
     load();
-    return function () { cancelled = true; };
+
+    function onSyncComplete() { load(); }
+    window.addEventListener('streakz:sync-complete', onSyncComplete);
+
+    return function () {
+      cancelled = true;
+      window.removeEventListener('streakz:sync-complete', onSyncComplete);
+    };
   }, [token]);
 
   // ── Create ──────────────────────────────────────────────────────────────────
   const addGoal = useCallback(async function (goalData) {
+    if (!navigator.onLine) {
+      var tempId = 'temp-goal-' + Date.now();
+      var tempGoal = Object.assign({ id: tempId, status: 'active', progress: 0, currentValue: 0 }, goalData);
+      setGoals(function (prev) { return prev.concat([tempGoal]); });
+      await upsertCachedGoal(tempGoal);
+      await enqueueAction('goal-add', goalData, 'goal-add-' + tempId);
+      return tempGoal;
+    }
+
     var data = await apiFetch('/api/goals', {
       method: 'POST',
       body: JSON.stringify(goalData),
     });
     setGoals(function (prev) { return prev.concat([data]); });
+    await upsertCachedGoal(data);
     return data;
   }, []);
 
   // ── Update metadata ─────────────────────────────────────────────────────────
   const updateGoal = useCallback(async function (id, updates) {
+    // Optimistic
+    setGoals(function (prev) {
+      return prev.map(function (g) { return g.id === id ? Object.assign({}, g, updates) : g; });
+    });
+
+    if (!navigator.onLine) {
+      var snapshot = goals.find(function (g) { return g.id === id; });
+      if (snapshot) await upsertCachedGoal(Object.assign({}, snapshot, updates));
+      await enqueueAction('goal-update', { id: id, updates: updates }, 'goal-update-' + id);
+      return Object.assign({}, snapshot, updates);
+    }
+
     var data = await apiFetch('/api/goals/' + id, {
       method: 'PATCH',
       body: JSON.stringify(updates),
@@ -80,12 +128,12 @@ export function useGoals(token) {
     setGoals(function (prev) {
       return prev.map(function (g) { return g.id === id ? data : g; });
     });
+    await upsertCachedGoal(data);
     return data;
-  }, []);
+  }, [goals]);
 
   // ── Update progress (optimistic) ────────────────────────────────────────────
   const updateProgress = useCallback(async function (id, progressData) {
-    // Save snapshot of the goal before the optimistic update for potential rollback
     var snapshot = null;
 
     setGoals(function (prev) {
@@ -93,7 +141,6 @@ export function useGoals(token) {
         if (g.id !== id) return g;
         snapshot = g;
         var updated = Object.assign({}, g, progressData);
-        // Optimistically derive status
         if (updated.progressType === 'count' && updated.currentValue >= updated.targetValue) {
           updated.status = 'completed';
         } else if (updated.progressType === 'percentage' && updated.progress >= 100) {
@@ -103,18 +150,26 @@ export function useGoals(token) {
       });
     });
 
+    if (!navigator.onLine) {
+      if (snapshot) {
+        var offlineUpdated = Object.assign({}, snapshot, progressData);
+        await upsertCachedGoal(offlineUpdated);
+      }
+      await enqueueAction('goal-progress', { id: id, progressData: progressData }, 'goal-progress-' + id);
+      return Object.assign({}, snapshot, progressData);
+    }
+
     try {
       var data = await apiFetch('/api/goals/' + id + '/progress', {
         method: 'PATCH',
         body: JSON.stringify(progressData),
       });
-      // Reconcile with authoritative server response
       setGoals(function (prev) {
         return prev.map(function (g) { return g.id === id ? data : g; });
       });
+      await upsertCachedGoal(data);
       return data;
     } catch (err) {
-      // Rollback to snapshot
       if (snapshot) {
         var rollback = snapshot;
         setGoals(function (prev) {
@@ -123,20 +178,27 @@ export function useGoals(token) {
       }
       throw err;
     }
-  }, []);
+  }, [goals]);
 
   // ── Delete (optimistic) ─────────────────────────────────────────────────────
   const deleteGoal = useCallback(async function (id) {
-    // Optimistic removal
     setGoals(function (prev) { return prev.filter(function (g) { return g.id !== id; }); });
+    await deleteCachedGoal(id);
+
+    if (!navigator.onLine) {
+      await enqueueAction('goal-delete', { id: id }, 'goal-delete-' + id);
+      return;
+    }
+
     try {
       await apiFetch('/api/goals/' + id, { method: 'DELETE' });
     } catch (err) {
       console.error('Failed to delete goal:', err);
-      // Re-fetch to restore correct state
       try {
         var data = await apiFetch('/api/goals');
-        setGoals(Array.isArray(data) ? data : []);
+        var arr = Array.isArray(data) ? data : [];
+        setGoals(arr);
+        await cacheGoals(arr);
       } catch (fetchErr) {
         console.error('Failed to restore goals after delete error:', fetchErr);
       }

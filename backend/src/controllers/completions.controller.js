@@ -8,8 +8,8 @@ import {
 } from '../utils/validation.js';
 
 export async function listCompletions(req, res) {
-  if (!req.user || !req.user.id) {
-    return res.status(401).json({ message: 'Not authorized, user data missing' });
+  if (!req.user?.id) {
+    return res.status(401).json({ error: 'Not authorized' });
   }
   const docs = await Completion.find({ userId: req.user.id })
     .sort({ date: 1 })
@@ -28,25 +28,29 @@ export async function listCompletions(req, res) {
  * Toggle habit completion for a date: remove if present, else add.
  * Body: { date: "YYYY-MM-DD", habitId: "<ObjectId>" }
  *
- * Date validation rules:
- *   - Must be a valid YYYY-MM-DD string
- *   - Cannot be in the future
- *   - Cannot be more than 2 days in the past
+ * Idempotency note: if the Completion record was already updated by a previous
+ * sync attempt (duplicate key scenario), the upsert is safe and won't throw.
  */
 export async function toggleCompletion(req, res) {
-  if (!req.user || !req.user.id) {
-    return res.status(401).json({ message: 'Not authorized, user data missing' });
+  if (!req.user?.id) {
+    return res.status(401).json({ error: 'Not authorized' });
   }
 
   const { date, habitId } = req.body || {};
 
-  // Validate date format first, then allowed range
+  // Validate date format then allowed range
   assertDateString(date);
   assertAllowedPastDate(date);
 
   if (!habitId || typeof habitId !== 'string') {
     throw new AppError('habitId is required', 400);
   }
+
+  // Reject temp IDs that were never persisted to the server
+  if (habitId.startsWith('temp-')) {
+    throw new AppError('Invalid habitId — habit was not yet synced to server', 400);
+  }
+
   assertObjectId(habitId, 'habitId');
 
   // Ensure the habit belongs to this user

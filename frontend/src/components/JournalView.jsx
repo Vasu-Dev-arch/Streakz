@@ -2,6 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getToken } from '../hooks/useAuth';
+import {
+  getCachedJournalEntries,
+  upsertCachedJournalEntry,
+  cacheJournalEntries,
+  enqueueAction,
+} from '../utils/offlineDB';
+import { OfflineFeatureNotice } from './OfflineFeatureNotice';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 
@@ -50,28 +57,86 @@ export function JournalView() {
   var todayStr = localDateKey(0);
   var yesterdayStr = localDateKey(1);
 
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [fetchLoading, setFetchLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState(null); // null | 'saved' | 'error'
+  const [status, setStatus] = useState(null); // null | 'saved' | 'saved-offline' | 'error'
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [expandedEntry, setExpandedEntry] = useState(null);
   const statusTimerRef = useRef(null);
 
-  // ── Fetch entry for selected date ──────────────────────────────────────────
+  useEffect(function () {
+    function up() { setIsOnline(true); }
+    function down() { setIsOnline(false); }
+    window.addEventListener('online', up);
+    window.addEventListener('offline', down);
+    return function () {
+      window.removeEventListener('online', up);
+      window.removeEventListener('offline', down);
+    };
+  }, []);
+
+  // ── Fetch history — offline-first ──────────────────────────────────────────
+  const fetchHistory = useCallback(async function () {
+    setHistoryLoading(true);
+    try {
+      // Show cached first
+      var cached = await getCachedJournalEntries();
+      if (cached.length) {
+        var past = cached.filter(function (e) { return e.date < todayStr; });
+        setHistory(past.sort(function (a, b) { return b.date.localeCompare(a.date); }));
+      }
+
+      if (navigator.onLine) {
+        var entries = await apiFetch('/api/journal/history');
+        var arr = Array.isArray(entries) ? entries : [];
+        setHistory(arr);
+        await cacheJournalEntries(arr);
+      }
+    } catch (_err) {
+      // keep whatever we have
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [todayStr]);
+
+  useEffect(function () {
+    fetchHistory();
+    function onSync() { fetchHistory(); }
+    window.addEventListener('streakz:sync-complete', onSync);
+    return function () { window.removeEventListener('streakz:sync-complete', onSync); };
+  }, [fetchHistory]);
+
+  // ── Fetch entry for selected date — offline-first ─────────────────────────
   const fetchEntry = useCallback(async function (date) {
     setFetchLoading(true);
     setStatus(null);
     try {
-      var entry = await apiFetch('/api/journal?date=' + date);
-      setTitle((entry && entry.title) ? entry.title : '');
-      setContent((entry && entry.content) ? entry.content : '');
+      // Try cache first
+      var cached = await getCachedJournalEntries();
+      var local = cached.find(function (e) { return e.date === date; });
+      if (local) {
+        setTitle(local.title || '');
+        setContent(local.content || '');
+      }
+
+      if (navigator.onLine) {
+        var entry = await apiFetch('/api/journal?date=' + date);
+        setTitle((entry && entry.title) ? entry.title : '');
+        setContent((entry && entry.content) ? entry.content : '');
+        if (entry) await upsertCachedJournalEntry(entry);
+      } else if (!local) {
+        setTitle('');
+        setContent('');
+      }
     } catch (_err) {
-      setTitle('');
-      setContent('');
+      if (!content) { setTitle(''); setContent(''); }
     } finally {
       setFetchLoading(false);
     }
@@ -81,50 +146,51 @@ export function JournalView() {
     fetchEntry(selectedDate);
   }, [selectedDate, fetchEntry]);
 
-  // ── Fetch history (all entries before today) ───────────────────────────────
-  const fetchHistory = useCallback(async function () {
-    setHistoryLoading(true);
-    try {
-      var entries = await apiFetch('/api/journal/history');
-      setHistory(Array.isArray(entries) ? entries : []);
-    } catch (_err) {
-      setHistory([]);
-    } finally {
-      setHistoryLoading(false);
-    }
-  }, []);
-
-  useEffect(function () {
-    fetchHistory();
-  }, [fetchHistory]);
-
-  // Cleanup status timer on unmount
   useEffect(function () {
     return function () { clearTimeout(statusTimerRef.current); };
   }, []);
 
-  // ── Save ───────────────────────────────────────────────────────────────────
+  // ── Save ──────────────────────────────────────────────────────────────────
   async function handleSave() {
     if (!content.trim()) return;
     setSaving(true);
     setStatus(null);
     clearTimeout(statusTimerRef.current);
+
+    var payload = {
+      date: selectedDate,
+      title: title.trim(),
+      content: content.trim(),
+    };
+
+    // Always save to local cache immediately
+    await upsertCachedJournalEntry(payload);
+
+    if (!isOnline) {
+      // Queue for later sync — dedupeKey ensures only one pending save per date
+      await enqueueAction('journal-save', payload, 'journal-save-' + selectedDate);
+      setStatus('saved-offline');
+      setSaving(false);
+      statusTimerRef.current = setTimeout(function () { setStatus(null); }, 3500);
+      // Update history list from cache
+      fetchHistory();
+      return;
+    }
+
     try {
       await apiFetch('/api/journal', {
         method: 'POST',
-        body: JSON.stringify({
-          date: selectedDate,
-          title: title.trim(),
-          content: content.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
       setStatus('saved');
       fetchHistory();
     } catch (_err) {
-      setStatus('error');
+      // Network error during attempt — queue it
+      await enqueueAction('journal-save', payload, 'journal-save-' + selectedDate);
+      setStatus('saved-offline');
     } finally {
       setSaving(false);
-      statusTimerRef.current = setTimeout(function () { setStatus(null); }, 3000);
+      statusTimerRef.current = setTimeout(function () { setStatus(null); }, 3500);
     }
   }
 
@@ -191,6 +257,11 @@ export function JournalView() {
             {status === 'saved' && (
               <span className="journal-status journal-status--saved">✓ Saved</span>
             )}
+            {status === 'saved-offline' && (
+              <span className="journal-status" style={{ color: 'var(--amber)' }}>
+                📡 Saved offline — will sync
+              </span>
+            )}
             {status === 'error' && (
               <span className="journal-status journal-status--error">Failed to save</span>
             )}
@@ -198,7 +269,7 @@ export function JournalView() {
         </div>
       )}
 
-      {/* Past entries — everything before today */}
+      {/* Past entries */}
       <section className="journal-history">
         <h2 className="journal-history__title">Past Entries</h2>
         {historyLoading ? (

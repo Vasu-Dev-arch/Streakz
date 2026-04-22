@@ -6,6 +6,7 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  themeColor: '#7c6af7',
 };
 
 export const metadata = {
@@ -31,6 +32,12 @@ export const metadata = {
   authors: [{ name: 'Streakz' }],
   creator: 'Streakz',
   publisher: 'Streakz',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Streakz',
+  },
   robots: {
     index: true,
     follow: true,
@@ -70,8 +77,15 @@ export const metadata = {
     canonical: 'https://streakz.app',
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/icon-152x152.png', sizes: '152x152', type: 'image/png' },
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
   },
 };
 
@@ -90,6 +104,14 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
         <link rel="icon" type="image/png" href="/favicon.ico" />
+        {/* PWA */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Streakz" />
+        <meta name="application-name" content="Streakz" />
+        <meta name="msapplication-TileColor" content="#7c6af7" />
       </head>
       <body>
         <Providers>{children}</Providers>

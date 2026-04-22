@@ -4,8 +4,9 @@ import { AppError } from '../middleware/AppError.js';
 import { assertObjectId, validateHabitBody } from '../utils/validation.js';
 
 export async function listHabits(req, res) {
-  if (!req.user || !req.user.id) {
-    return res.status(401).json({ message: 'Not authorized, user data missing' });
+  // auth middleware already guarantees req.user exists; this is a safety net
+  if (!req.user?.id) {
+    return res.status(401).json({ error: 'Not authorized' });
   }
   const habits = await Habit.find({ userId: req.user.id }).sort({ createdAt: 1 }).lean();
   const mapped = habits.map((h) => ({
@@ -25,11 +26,28 @@ export async function listHabits(req, res) {
 }
 
 export async function createHabit(req, res) {
-  if (!req.user || !req.user.id) {
-    return res.status(401).json({ message: 'Not authorized, user data missing' });
+  if (!req.user?.id) {
+    return res.status(401).json({ error: 'Not authorized' });
   }
+
+  // Validate before touching the DB — throws AppError (400) on bad input
   validateHabitBody(req.body, false);
-  const { name, emoji, icon, color, category, description, frequencyType, daysOfWeek } = req.body;
+
+  const {
+    name,
+    emoji,
+    icon,
+    color,
+    category,
+    description,
+    frequencyType,
+    daysOfWeek,
+  } = req.body;
+
+  // Extra guard: category is required and must not exceed model limit
+  if (!category || typeof category !== 'string' || !category.trim()) {
+    throw new AppError('category is required', 400);
+  }
 
   const habit = await Habit.create({
     userId: req.user.id,
@@ -38,29 +56,37 @@ export async function createHabit(req, res) {
     emoji: emoji ?? '',
     icon: icon ?? '',
     color: color ?? '#22c97a',
-    category,
+    category: category.trim(),
     frequencyType: frequencyType ?? 'daily',
     daysOfWeek: daysOfWeek ?? [],
   });
+
+  // 201 with the clean JSON shape (id, no _id/userId)
   res.status(201).json(habit.toJSON());
 }
 
 export async function updateHabit(req, res) {
-  if (!req.user || !req.user.id) {
-    return res.status(401).json({ message: 'Not authorized, user data missing' });
+  if (!req.user?.id) {
+    return res.status(401).json({ error: 'Not authorized' });
   }
+
+  // Will throw AppError(400) for invalid ObjectId strings (e.g. "temp-*")
   assertObjectId(req.params.id, 'habit id');
   validateHabitBody(req.body, true);
 
   const updates = {};
-  if (req.body.name !== undefined) updates.name = req.body.name.trim();
-  if (req.body.description !== undefined) updates.description = req.body.description.trim();
-  if (req.body.emoji !== undefined) updates.emoji = req.body.emoji;
-  if (req.body.icon !== undefined) updates.icon = req.body.icon;
-  if (req.body.color !== undefined) updates.color = req.body.color;
-  if (req.body.category !== undefined) updates.category = req.body.category;
+  if (req.body.name !== undefined)          updates.name          = req.body.name.trim();
+  if (req.body.description !== undefined)   updates.description   = req.body.description.trim();
+  if (req.body.emoji !== undefined)         updates.emoji         = req.body.emoji;
+  if (req.body.icon !== undefined)          updates.icon          = req.body.icon;
+  if (req.body.color !== undefined)         updates.color         = req.body.color;
+  if (req.body.category !== undefined)      updates.category      = req.body.category.trim();
   if (req.body.frequencyType !== undefined) updates.frequencyType = req.body.frequencyType;
-  if (req.body.daysOfWeek !== undefined) updates.daysOfWeek = req.body.daysOfWeek;
+  if (req.body.daysOfWeek !== undefined)    updates.daysOfWeek    = req.body.daysOfWeek;
+
+  if (Object.keys(updates).length === 0) {
+    throw new AppError('No valid fields to update', 400);
+  }
 
   const habit = await Habit.findOneAndUpdate(
     { _id: req.params.id, userId: req.user.id },
@@ -74,17 +100,26 @@ export async function updateHabit(req, res) {
 }
 
 export async function deleteHabit(req, res) {
-  if (!req.user || !req.user.id) {
-    return res.status(401).json({ message: 'Not authorized, user data missing' });
+  if (!req.user?.id) {
+    return res.status(401).json({ error: 'Not authorized' });
   }
+
   assertObjectId(req.params.id, 'habit id');
-  const habit = await Habit.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+
+  const habit = await Habit.findOneAndDelete({
+    _id: req.params.id,
+    userId: req.user.id,
+  });
   if (!habit) {
-    throw new AppError('Habit not found', 404);
+    // Already deleted (idempotent sync retry) — treat as success
+    return res.status(204).send();
   }
+
+  // Remove the habit from all completion records for this user
   await Completion.updateMany(
     { userId: req.user.id },
     { $pull: { habitIds: habit._id } }
   );
+
   res.status(204).send();
 }

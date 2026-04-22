@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useGoals } from '../hooks/useGoals';
 
@@ -549,12 +549,46 @@ function GoalCard({ goal, onUpdateProgress, onUpdate, onDelete }) {
 
 // ── Main GoalsView ────────────────────────────────────────────────────────────
 
+// ── Offline banner ───────────────────────────────────────────────────────────
+function OfflineBanner() {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '8px',
+      background: 'color-mix(in srgb, var(--amber,#f5a623) 10%, transparent)',
+      border: '1px solid color-mix(in srgb, var(--amber,#f5a623) 30%, transparent)',
+      borderRadius: 'var(--radius-sm)', padding: '9px 13px',
+      fontSize: '12px', fontFamily: 'var(--mono)', color: 'var(--amber,#f5a623)',
+      marginBottom: '20px',
+    }}>
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0" />
+        <circle cx="12" cy="20" r="1" fill="currentColor" />
+      </svg>
+      Offline — viewing cached goals. Changes will sync on reconnect.
+    </div>
+  );
+}
+
 export function GoalsView() {
   const { token } = useAuth();
   const { goals, loading, addGoal, updateGoal, updateProgress, deleteGoal } = useGoals(token);
 
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+
+  useEffect(function () {
+    function up()   { setIsOnline(true); }
+    function down() { setIsOnline(false); }
+    window.addEventListener('online', up);
+    window.addEventListener('offline', down);
+    return function () {
+      window.removeEventListener('online', up);
+      window.removeEventListener('offline', down);
+    };
+  }, []);
 
   async function handleAddGoal(payload) {
     setSaving(true);
@@ -579,6 +613,8 @@ export function GoalsView() {
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+      {/* Offline banner */}
+      {!isOnline && <OfflineBanner />}
       {/* Page header */}
       <div className="section-header" style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '13px', color: 'var(--text3)', fontFamily: 'var(--mono)' }}>

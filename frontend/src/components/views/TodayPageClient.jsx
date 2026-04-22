@@ -3,11 +3,12 @@
 /**
  * TodayPageClient
  *
- * Consumes HabitsContext provided by DashboardShell and renders
- * the existing TodayView component. No business logic lives here.
+ * Consumes HabitsContext and TodosContext provided by DashboardShell.
+ * Passes todos down to TodayView for the compact widget.
  */
 
 import { useHabitsContext } from '../../context/HabitsContext';
+import { useTodosContext } from '../../context/TodosContext';
 import { TodayView } from '../TodayView';
 
 export function TodayPageClient() {
@@ -26,6 +27,8 @@ export function TodayPageClient() {
     onNavigateToAiCoach,
   } = useHabitsContext();
 
+  const { todos, toggleTodo } = useTodosContext();
+
   return (
     <TodayView
       habits={habits}
@@ -40,6 +43,8 @@ export function TodayPageClient() {
       onGoalChange={updateDailyGoal}
       onReminderChange={updateReminderTime}
       onNavigateToAiCoach={onNavigateToAiCoach}
+      todos={todos}
+      onToggleTodo={toggleTodo}
     />
   );
 }

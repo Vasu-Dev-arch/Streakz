@@ -7,6 +7,7 @@ import settingsRoutes from './routes/settings.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import journalRoutes from './routes/journal.routes.js';
 import goalsRoutes from './routes/goals.routes.js';
+import todosRoutes from './routes/todos.routes.js';
 import { authenticate } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -39,12 +40,13 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRoutes);
 
 // All routes below require a valid JWT
-app.use('/api/habits', authenticate, habitsRoutes);
+app.use('/api/habits',      authenticate, habitsRoutes);
 app.use('/api/completions', authenticate, completionsRoutes);
-app.use('/api/settings', authenticate, settingsRoutes);
-app.use('/api/ai', authenticate, aiRoutes);
-app.use('/api/journal', authenticate, journalRoutes);
-app.use('/api/goals', authenticate, goalsRoutes);
+app.use('/api/settings',    authenticate, settingsRoutes);
+app.use('/api/ai',          authenticate, aiRoutes);
+app.use('/api/journal',     authenticate, journalRoutes);
+app.use('/api/goals',       authenticate, goalsRoutes);
+app.use('/api/todos',       authenticate, todosRoutes);
 
 app.use(errorHandler);
 

@@ -7,9 +7,12 @@ import { HabitModal } from './HabitModal';
 import { ConfirmModal } from './ConfirmModal';
 import { FirstHabitPrompt } from './FirstHabitPrompt';
 import { ProfileMenu } from './ProfileMenu';
+import { PWAInstallBanner } from './PWAInstallBanner';
 import { useAuth } from '../hooks/useAuth';
 import { useHabits } from '../hooks/useHabits';
+import { useTodos } from '../hooks/useTodos';
 import { HabitsContext } from '../context/HabitsContext';
+import { TodosContext } from '../context/TodosContext';
 import { DAYS, MONTHS } from '../constants';
 
 function pathnameToView(pathname) {
@@ -40,11 +43,9 @@ export function DashboardShell({ children }) {
     logout,
   } = useAuth();
 
-  // Tracks whether the component has mounted (avoids SSR mismatch on token read)
   const [authReady, setAuthReady] = useState(false);
   useEffect(() => { setAuthReady(true); }, []);
 
-  // Redirect to auth if not logged in
   useEffect(() => {
     if (authReady && !token) router.replace('/auth');
   }, [authReady, token, router]);
@@ -82,14 +83,21 @@ export function DashboardShell({ children }) {
     addCategory,
   } = useHabits(token);
 
-  // Close sidebar on Escape
+  const {
+    todos,
+    loading: todosLoading,
+    addTodo,
+    updateTodo,
+    toggleTodo,
+    deleteTodo,
+  } = useTodos(token);
+
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') setSidebarOpen(false); }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // Prevent body scroll when sidebar is open (mobile drawer)
   useEffect(() => {
     document.body.style.overflow = sidebarOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -113,7 +121,6 @@ export function DashboardShell({ children }) {
 
   useEffect(() => () => clearTimeout(promptTimerRef.current), []);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleAddHabit = () => { setEditingHabit(null); setIsModalOpen(true); };
 
   const handleEditHabit = (id) => {
@@ -158,7 +165,6 @@ export function DashboardShell({ children }) {
     setAiCoachError(null);
   };
 
-  // ── Routing helpers ──────────────────────────────────────────────────────────
   const activeView = pathnameToView(pathname);
 
   const VIEW_TITLES = {
@@ -169,6 +175,7 @@ export function DashboardShell({ children }) {
     journal: 'Journal',
     'ai-coach': 'AI Coach',
     settings: 'Settings',
+    todo: 'To-Do',
   };
 
   const getFormattedDate = () => {
@@ -180,7 +187,6 @@ export function DashboardShell({ children }) {
     router.push(view === 'today' ? '/dashboard' : `/dashboard/${view}`);
   };
 
-  // ── Context value ────────────────────────────────────────────────────────────
   const habitsContextValue = {
     habits,
     completions,
@@ -199,7 +205,6 @@ export function DashboardShell({ children }) {
     onEditHabit: handleEditHabit,
     onDeleteHabit: (id) => setHabitToDelete(id),
     onNavigateToAiCoach: () => router.push('/dashboard/ai-coach'),
-    // AI Coach state
     aiCoachGoal, setAiCoachGoal,
     aiCoachPlan, setAiCoachPlan,
     aiCoachLoading, setAiCoachLoading,
@@ -208,6 +213,15 @@ export function DashboardShell({ children }) {
     aiCoachAddingAll, setAiCoachAddingAll,
     aiCoachAllAdded, setAiCoachAllAdded,
     resetAiCoachState,
+  };
+
+  const todosContextValue = {
+    todos,
+    loading: todosLoading,
+    addTodo,
+    updateTodo,
+    toggleTodo,
+    deleteTodo,
   };
 
   if (!authReady) return null;
@@ -267,7 +281,9 @@ export function DashboardShell({ children }) {
 
         <div className="content-area">
           <HabitsContext.Provider value={habitsContextValue}>
-            {children}
+            <TodosContext.Provider value={todosContextValue}>
+              {children}
+            </TodosContext.Provider>
           </HabitsContext.Provider>
         </div>
       </main>
@@ -294,6 +310,8 @@ export function DashboardShell({ children }) {
         onAddHabit={handleFirstHabitAdd}
         onLater={handleDismissFirstHabitPrompt}
       />
+
+      <PWAInstallBanner />
     </div>
   );
 }
