@@ -9,6 +9,8 @@
  *  4. On network error / 5xx → leave action queued for next run.
  *  5. Temp IDs (prefix "temp-") are dropped for update/delete — the real
  *     server ID was never persisted, so these cannot be synced.
+ *
+ * All fetch calls use relative paths (/api/...) — same-origin, no base URL.
  */
 
 import {
@@ -20,8 +22,6 @@ import {
   cacheTodos,
 } from './offlineDB';
 import { getRawToken, isTokenValid, handleSessionExpired } from './tokenUtils';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 
 // ── Error types ───────────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ async function apiFetch(path, options = {}) {
 
   let res;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
+    res = await fetch(path, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -143,7 +143,7 @@ async function processAction(action) {
         await apiFetch(`/api/goals/${payload.id}`, { method: 'DELETE' });
         return 'ok';
 
-      // ── Todos ────────────────────────────────────────────────────────────────
+      // ── Todos ─────────────────────────────────────────────────────────────
       case 'todo-add':
         await apiFetch('/api/todos', { method: 'POST', body: JSON.stringify(payload) });
         return 'ok';
@@ -166,7 +166,7 @@ async function processAction(action) {
         await apiFetch(`/api/todos/${payload.id}`, { method: 'DELETE' });
         return 'ok';
 
-      // ── Settings ─────────────────────────────────────────────────────────────
+      // ── Settings ──────────────────────────────────────────────────────────
       case 'settings-update':
         await apiFetch('/api/settings', {
           method: 'PUT',

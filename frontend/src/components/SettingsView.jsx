@@ -5,13 +5,12 @@ import { ThemeSelector } from './ThemeSelector';
 import { getMeta, setMeta } from '../utils/offlineDB';
 import './SettingsView.css';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 const USER_CACHE_KEY = 'settings-user-profile';
 
 // ── Offline-safe fetch ────────────────────────────────────────────────────────
 async function apiFetch(path, options = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('streaks_token') : null;
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

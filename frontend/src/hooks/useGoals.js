@@ -8,12 +8,11 @@ import {
   enqueueAction,
 } from '../utils/offlineDB';
 
-var API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
+// All API calls are same-origin — no base URL needed.
 async function apiFetch(path, options) {
   var opts = options || {};
   var token = getToken();
-  var res = await fetch(API_BASE + path, Object.assign({}, opts, {
+  var res = await fetch(path, Object.assign({}, opts, {
     headers: Object.assign(
       { 'Content-Type': 'application/json' },
       token ? { Authorization: 'Bearer ' + token } : {},
@@ -36,7 +35,7 @@ export function useGoals(token) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ── Initial load — offline-first ────────────────────────────────────────────
+  // ── Initial load — offline-first ──────────────────────────────────────────
   useEffect(function () {
     if (!token) {
       setGoals([]);
@@ -87,7 +86,7 @@ export function useGoals(token) {
     };
   }, [token]);
 
-  // ── Create ──────────────────────────────────────────────────────────────────
+  // ── Create ────────────────────────────────────────────────────────────────
   const addGoal = useCallback(async function (goalData) {
     if (!navigator.onLine) {
       var tempId = 'temp-goal-' + Date.now();
@@ -107,7 +106,7 @@ export function useGoals(token) {
     return data;
   }, []);
 
-  // ── Update metadata ─────────────────────────────────────────────────────────
+  // ── Update metadata ───────────────────────────────────────────────────────
   const updateGoal = useCallback(async function (id, updates) {
     // Optimistic
     setGoals(function (prev) {
@@ -132,7 +131,7 @@ export function useGoals(token) {
     return data;
   }, [goals]);
 
-  // ── Update progress (optimistic) ────────────────────────────────────────────
+  // ── Update progress (optimistic) ──────────────────────────────────────────
   const updateProgress = useCallback(async function (id, progressData) {
     var snapshot = null;
 
@@ -180,7 +179,7 @@ export function useGoals(token) {
     }
   }, [goals]);
 
-  // ── Delete (optimistic) ─────────────────────────────────────────────────────
+  // ── Delete (optimistic) ───────────────────────────────────────────────────
   const deleteGoal = useCallback(async function (id) {
     setGoals(function (prev) { return prev.filter(function (g) { return g.id !== id; }); });
     await deleteCachedGoal(id);

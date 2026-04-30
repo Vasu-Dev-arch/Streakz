@@ -10,8 +10,6 @@ import {
 } from '../utils/offlineDB';
 import { OfflineFeatureNotice } from './OfflineFeatureNotice';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-
 function localDateKey(daysAgo) {
   var offset = daysAgo || 0;
   var d = new Date();
@@ -40,7 +38,7 @@ function formatDateLabel(dateStr, todayStr, yesterdayStr) {
 async function apiFetch(path, options) {
   var opts = options || {};
   var token = getToken();
-  var res = await fetch(API_BASE + path, Object.assign({}, opts, {
+  var res = await fetch(path, Object.assign({}, opts, {
     headers: Object.assign(
       { 'Content-Type': 'application/json' },
       token ? { Authorization: 'Bearer ' + token } : {},

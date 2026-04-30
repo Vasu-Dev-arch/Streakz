@@ -11,9 +11,6 @@ import { getToken } from '../hooks/useAuth';
 import { COLORS, EMOJIS } from '../constants';
 import { OfflineFeatureNotice } from './OfflineFeatureNotice';
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-
 function colorFor(index) {
   return COLORS[index % COLORS.length];
 }
@@ -75,7 +72,7 @@ export function AiCoachView({
 
     try {
       const token = getToken();
-      const res = await fetch(`${API_BASE}/api/ai/habit-coach`, {
+      const res = await fetch('/api/ai/habit-coach', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

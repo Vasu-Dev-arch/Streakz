@@ -5,8 +5,7 @@ import {
   cacheTodos, getCachedTodos, upsertCachedTodo, deleteCachedTodo, enqueueAction,
 } from '../utils/offlineDB';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-
+// All API calls are same-origin — no base URL needed.
 async function apiFetch(path, options = {}) {
   const token = getRawToken();
   if (!token || !isTokenValid(token)) {
@@ -14,7 +13,7 @@ async function apiFetch(path, options = {}) {
     throw new Error('SESSION_EXPIRED');
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -147,6 +146,7 @@ export function useTodos(token) {
       await upsertCachedTodo(data);
     } catch (err) {
       if (err.message === 'SESSION_EXPIRED') return;
+      // Rollback optimistic toggle
       setTodos((prev) => sortTodos(prev.map((t) => t.id === id ? { ...t, completed: !t.completed } : t)));
     }
   }, [todos]);

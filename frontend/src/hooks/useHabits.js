@@ -14,14 +14,14 @@ import {
   enqueueAction,
 } from '../utils/offlineDB';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-
 /**
  * Central fetch helper for useHabits.
  *  - Uses getRawToken() directly (no circular dep via useAuth)
  *  - Validates token expiry client-side before every request
  *  - Dispatches SESSION_EXPIRED_EVENT on 401/403
  *  - Throws Error('SESSION_EXPIRED') so callers can filter it from real errors
+ *
+ * All paths are relative (/api/...) — same-origin, no base URL needed.
  */
 async function apiFetch(path, options = {}) {
   const token = getRawToken();
@@ -33,7 +33,7 @@ async function apiFetch(path, options = {}) {
     throw new Error('SESSION_EXPIRED');
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ export function useHabits(token) {
   const [categories, setCategories] = useState(['study', 'fitness', 'work']);
   const [loading, setLoading] = useState(true);
 
-  // ── Initial load — offline-first ────────────────────────────────────────────
+  // ── Initial load — offline-first ──────────────────────────────────────────
   useEffect(() => {
     if (!token) {
       setHabits([]);
@@ -167,7 +167,7 @@ export function useHabits(token) {
     };
   }, [token]);
 
-  // ── Habits ──────────────────────────────────────────────────────────────────
+  // ── Habits ────────────────────────────────────────────────────────────────
 
   const addHabit = useCallback(async (habit) => {
     const payload = {
@@ -249,7 +249,7 @@ export function useHabits(token) {
     }
   }, []);
 
-  // ── Completions ─────────────────────────────────────────────────────────────
+  // ── Completions ───────────────────────────────────────────────────────────
 
   const toggleHabit = useCallback(async (id) => {
     const tk = todayKey();
@@ -330,7 +330,7 @@ export function useHabits(token) {
     }
   }, []);
 
-  // ── Settings ────────────────────────────────────────────────────────────────
+  // ── Settings ──────────────────────────────────────────────────────────────
 
   const updateDailyGoal = useCallback(async (goal) => {
     const validGoal = Math.max(1, Math.min(20, parseInt(goal) || 3));

@@ -1,8 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
-
+// All API calls are same-origin — no base URL needed.
 const TOKEN_KEY = 'streaks_token';
 
 export function getAuthRedirectPath({ name, isFirstLogin }) {
@@ -41,13 +39,13 @@ export function useAuth() {
     setError(null);
   }, []);
 
-  // ── Email / password ────────────────────────────────────────────────────────
+  // ── Email / password ──────────────────────────────────────────────────────
   const signup = useCallback(
     async ({ name, email, password }) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/api/auth/signup`, {
+        const res = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password }),
@@ -70,7 +68,7 @@ export function useAuth() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/api/auth/login`, {
+        const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
@@ -88,9 +86,9 @@ export function useAuth() {
     [handleAuthResponse]
   );
 
-  // ── Google OAuth ────────────────────────────────────────────────────────────
+  // ── Google OAuth ──────────────────────────────────────────────────────────
   const loginWithGoogle = useCallback(() => {
-    window.location.href = `${API_BASE}/api/auth/google`;
+    window.location.href = '/api/auth/google';
   }, []);
 
   const handleGoogleCallback = useCallback((searchParams) => {
@@ -124,7 +122,7 @@ export function useAuth() {
     return { ok: false };
   }, []);
 
-  // ── Profile updates ─────────────────────────────────────────────────────────
+  // ── Profile updates ───────────────────────────────────────────────────────
   const updateProfile = useCallback(
     async ({ name, isFirstLogin: ifl, firstHabitPromptShown: fhps } = {}) => {
       const tk = getToken();
@@ -133,7 +131,7 @@ export function useAuth() {
       if (ifl !== undefined) body.isFirstLogin = ifl;
       if (fhps !== undefined) body.firstHabitPromptShown = fhps;
 
-      const res = await fetch(`${API_BASE}/api/auth/profile`, {
+      const res = await fetch('/api/auth/profile', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -167,12 +165,12 @@ export function useAuth() {
     }
   }, [updateProfile]);
 
-  // ── Fetch current user ──────────────────────────────────────────────────────
+  // ── Fetch current user ────────────────────────────────────────────────────
   const fetchMe = useCallback(async () => {
     const tk = getToken();
     if (!tk) return;
     try {
-      const res = await fetch(`${API_BASE}/api/auth/me`, {
+      const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${tk}` },
       });
       if (!res.ok) return;
@@ -190,7 +188,7 @@ export function useAuth() {
     fetchMe();
   }, [token, user, fetchMe]);
 
-  // ── Logout ──────────────────────────────────────────────────────────────────
+  // ── Logout ────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
     clearToken();
     setTokenState(null);
